@@ -18,7 +18,7 @@ Aplican a `backend/app/**`: Python 3.13, FastAPI, Pydantic y uvicorn.
 4. Si añades lógica nueva (por ejemplo, un filtro nuevo), ponla en un helper puro (sin `Query` ni `router`), como `filter_movements_by_<criterio>(movements, valor)`, y llámalo desde el endpoint. No cambies la firma de `filter_movements`, que usan 7 endpoints.
 5. Añádelo en `routes.py`, salvo que la tarea pida dividir el archivo.
 
-**Por qué:** los endpoints de [`routes.py`](../../backend/app/routes.py) usan `Literal`, `response_model` y los helpers de filtrado y agregación (por ejemplo, `get_metrics_summary` usa `GroupBy`, `response_model=list[MetricsSummaryItem]`, `filter_movements` y `summarize_movements`). Hay una excepción: el filtro por `business_type` está repetido en línea en 4 endpoints (`routes.py:280`, `:298`, `:314` y `:353`). Es duplicación existente que no hay que copiar. El archivo concentra todo el backend en un solo `APIRouter` (hallazgos A3 y A4).
+**Por qué:** los endpoints de [`routes.py`](../../backend/app/routes.py) usan `Literal`, `response_model` y los helpers de filtrado y agregación (por ejemplo, `get_metrics_summary` usa `GroupBy`, `response_model=list[MetricsSummaryItem]`, `filter_movements` y `summarize_movements`). Hay una excepción: el filtro por `business_type` está escrito en línea en 6 endpoints, 4 con el parámetro opcional (`routes.py:278`, `:296`, `:312` y `:351`) y 2 con valor fijo (`/b2b` en `:370` y `/b2c` en `:386`). Es duplicación existente que no hay que copiar. El archivo concentra todo el backend en un solo `APIRouter` (hallazgos A3 y A4).
 
 **✅ Haz:**
 ```python

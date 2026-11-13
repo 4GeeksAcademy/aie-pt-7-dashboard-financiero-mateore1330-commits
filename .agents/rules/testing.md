@@ -76,17 +76,19 @@ assert all(item["create_date"] == first_date for item in response.json())
 **Regla:** Si cambias la lógica de fechas del frontend (agrupación por mes, etiquetas, filtros):
 
 1. Añade un caso de test con una fecha en **día 1** (por ejemplo `"2026-02-01"`) y comprueba que cae en su mes.
-2. Ejecuta los tests también en una zona horaria con UTC negativo:
+2. Ejecuta los tests también en una zona horaria con UTC negativo, comprobando antes que esa zona se aplica de verdad:
 
 ```bash
-docker compose exec -u root frontend apk add --no-cache tzdata   # una vez por contenedor
+docker compose exec -e TZ=America/New_York frontend node -e 'console.log(new Date().getTimezoneOffset())'
+# 300 o 240 → la zona se aplica. 0 → instala tzdata y repite la comprobación:
+docker compose exec -u root frontend apk add --no-cache tzdata
 docker compose exec -e TZ=America/New_York frontend npm test
 ```
 
-**Por qué:** la imagen `node:24-alpine` no trae datos de zonas horarias: sin `tzdata`, `TZ=America/New_York` no tiene efecto (`getTimezoneOffset()` devuelve 0) y el bug D2 quedó oculto en la Fase 2 (hallazgo T3). Hasta el commit `94b6fd1`, los tests de `computeMonthlyData` solo usaban los días 3, 5 y 8. Ahora existe el caso `"groups movements dated on the 1st into their own month"`, que falla con el código anterior en `America/New_York` y pasa con el actual. El `node_modules` del host está vacío porque el compose lo monta como volumen anónimo, así que los tests no se pueden ejecutar fuera del contenedor sin instalar dependencias.
+**Por qué:** que `TZ` se aplique depende de la imagen. En la Fase 2, con la imagen `node:24-alpine` de entonces, `TZ=America/New_York` no tenía efecto sin `tzdata` (`getTimezoneOffset()` devolvía 0), y el bug D2 quedó oculto (hallazgo T3). Tras reconstruir la imagen en la Fase 3 (Node 24.22.3, ICU 78.3), la zona se aplica sin `tzdata`. Como no se puede saber de antemano cuál de los dos casos tendrás, la comprobación del paso 2 es obligatoria. Hasta el commit `94b6fd1`, los tests de `computeMonthlyData` solo usaban los días 3, 5 y 8. Ahora existe el caso `"groups movements dated on the 1st into their own month"`, que falla con el código anterior en `America/New_York` y pasa con el actual. El `node_modules` del host está vacío porque el compose lo monta como volumen anónimo, así que los tests no se pueden ejecutar fuera del contenedor sin instalar dependencias.
 
 **✅ Haz:** comprobar primero que la zona horaria se aplica (`docker compose exec -e TZ=America/New_York frontend node -e 'console.log(new Date().getTimezoneOffset())'` debe dar `300` o `240`) y después ejecutar `npm test` con ese `TZ`.
 
-**❌ Evita:** ejecutar `TZ=America/New_York npm test` sin `tzdata` y concluir que funciona.
+**❌ Evita:** ejecutar `TZ=America/New_York npm test` sin comprobar antes el offset y concluir que funciona.
 
-**Cómo comprobarlo:** el test del día 1 pasa con y sin `TZ=America/New_York`, y fallaría con el código anterior a la corrección. `tzdata` desaparece cada vez que el contenedor se **recrea** (`docker compose up --build`, `docker compose down` seguido de `up`, o un cambio en `docker-compose.yml`). Si el comando de comprobación del offset vuelve a dar `0`, repite la instalación del paso 2.
+**Cómo comprobarlo:** el test del día 1 pasa con y sin `TZ=America/New_York`, y fallaría con el código anterior a la corrección. Si instalaste `tzdata`, desaparece cada vez que el contenedor se **recrea** (`docker compose up --build`, `docker compose down` seguido de `up`, o un cambio en `docker-compose.yml`). Por eso hay que repetir la comprobación del offset en cada sesión.

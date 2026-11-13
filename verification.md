@@ -193,3 +193,54 @@ Se dio a otro agente nuevo una tarea distinta, diseñada para pasar por las regl
 - T-E, T-F y la ronda 2 son **solo planes**: validan cómo razona el agente, no código ejecutado.
 - T-A, T-B, T-D, T-E y T-F se ejecutaron en paralelo sobre el mismo árbol de trabajo, así que los resultados de TE-01 de cada agente incluían cambios de los demás. Los diffs se revisaron por separado y cada tarea se commiteó solo con sus archivos.
 - Efectos secundarios en el entorno, sin cambios en el repositorio: se instaló `tzdata` en el contenedor del frontend, y T-C reconstruyó las imágenes, con lo que se recrearon los contenedores y `tzdata` desapareció.
+
+---
+
+## Fase 4: Construir la memoria del proyecto
+
+**Fecha:** 2026-11-13. Se creó [`memory-bank/`](memory-bank/) con 4 archivos (`product-overview.md`, `tech-stack.md`, `architecture.md` y `current-state.md`) y la regla UR-03 para mantenerlos.
+
+### Datos recogidos antes de redactar
+
+Para no reutilizar sin más lo de fases anteriores, se volvió a comprobar el estado del repositorio:
+
+| Comprobación | Resultado |
+|---|---|
+| Runtimes (`python --version`, `node --version`, `npm --version` en los contenedores) | Python 3.13.18, Node 24.22.3, npm 11.19.1 |
+| Versiones instaladas (`npm ls --depth=0`, `pip freeze`, `package-lock.json`) | Por ejemplo, React **19.2.5** instalado frente a `^19.2.4` en `package.json` |
+| Endpoints (`openapi.json`) y llamada real a los 9 | Todos 200 con parámetros válidos. `/comparison` sin fechas da 422 |
+| Ausencia de autenticación y base de datos (`grep`) | Sin resultados |
+| Tests, lint y build | 15 passed · 6 passed · OK · OK (bundle JS de 584 kB) |
+
+### Correcciones (afirmación incorrecta → corrección)
+
+- **"En la imagen `node:24-alpine`, `TZ` no tiene efecto sin `tzdata`" (TE-04 y hallazgo T3)** → Ya no es cierto. Tras reconstruir la imagen en la Fase 3, el contenedor no tiene `tzdata` ni `/usr/share/zoneinfo`, pero `TZ=America/New_York` sí se aplica (`getTimezoneOffset()` = 300, `new Date("2024-02-01").getMonth()` = enero), porque Node 24.22.3 trae sus propios datos de zonas horarias en ICU (tz 2026e). No se pudo determinar por qué la imagen anterior se comportaba de otra forma, porque ya no está disponible para compararla. TE-04 se reescribió para **comprobar primero** el offset e instalar `tzdata` solo si da 0.
+- **El agente escribió que la verificación de "los 9 endpoints" ya estaba hecha** → Solo se habían probado algunos. Se llamó a los 9 antes de dar el dato por bueno, y se precisó que `/comparison` sin fechas devuelve 422.
+
+### Auditoría independiente del `memory-bank`
+
+Un **agente nuevo, sin contexto**, revisó los 4 archivos contra el código, los contenedores en marcha y `git log`, con la instrucción de buscar afirmaciones falsas, sin evidencia, inventadas o desactualizadas. **No encontró afirmaciones de producto, usuarios ni roadmap inventados.** Confirmó como correctos, entre otros datos, los 9 endpoints y sus parámetros, todas las versiones, los valores de los KPIs, los recuentos de tests, el tamaño del bundle, las referencias de línea del frontend y los 8 hashes de commit.
+
+Encontró estos problemas, todos comprobados antes de corregirlos:
+
+| Archivo | Afirmación | Realidad | Gravedad | Corrección |
+|---|---|---|---|---|
+| `tech-stack.md` | "`tsc` estricto" | **Ningún `tsconfig` activa `strict`**: solo `noUnusedLocals`, `noUnusedParameters`, `erasableSyntaxOnly` y `noFallthroughCasesInSwitch` | ❌ Incorrecta | Indica que `strict` no está activado. Se añadió como carencia en `current-state.md` |
+| `architecture.md`, `current-state.md`, `backend.md` (BE-01) | Filtro `business_type` "en 4 endpoints (`:280`, `:298`, `:314`, `:353`)" | Está en **6**: 4 con el parámetro opcional (los bloques empiezan en `:278`, `:296`, `:312` y `:351`) y 2 con valor fijo (`/b2b` `:370` y `/b2c` `:386`) | Imprecisa | Los tres archivos corregidos |
+| `product-overview.md` | `/alerts`: "gasto que supera la media histórica" | Compara con la media de los periodos **anteriores**, el umbral es una proporción y el primer periodo nunca alerta | Imprecisa | Descripción exacta con la fórmula |
+| `product-overview.md` | "`sales` el 90 %", "B2B el 55 %" | Son probabilidades del generador. Con `seed=42`, B2B = 203/360 (56,4 %) y `sales` = 175/197 ingresos (88,8 %) | Imprecisa | Separa las probabilidades de los valores observados |
+| `product-overview.md` | La semilla fija "importes, tipos, categorías y días" | También fija `business_type` y la proporción de ingresos de cada mes (45-70 %) | Incompleta | Lista completa |
+| `architecture.md` | "`/health` y `/docs` solo responden en el 8000" | En el 5173 responden **200 con el HTML del frontend** (hallazgo E1) | Imprecisa | Aviso explícito |
+| `architecture.md` | "Fuera de Docker, el proxy no funciona sin `VITE_API_BASE_URL`" | La variable no arregla el proxy, lo **evita**: las peticiones van directas al backend gracias a CORS `*` | Imprecisa | Explicación corregida |
+| `current-state.md` y **`engineering-findings.md`** | "22 hallazgos" | Las tablas tienen **25** (10 convenciones y 15 riesgos), y la trazabilidad, 25 filas. Las 22 **reglas** sí eran correctas | ❌ Incorrecta | Total corregido en `engineering-findings.md` y nota en `current-state.md` |
+| Los 4 archivos | `last_verified: … (commit 1b46bed)` | El `memory-bank` y UR-03 aún no estaban en ese commit | Desactualizada | "Sobre 1b46bed y los cambios de la Fase 4" |
+| `product-overview.md` | "Si la API falla, aparece un mensaje de error" | Además, los KPIs muestran "—" y las gráficas "No data available to display" | Incompleta | Ampliado |
+
+**Corrección sobre una corrección anterior:** en la Fase 2 se registró *"16 hallazgos → recuento erróneo, son 22"*. Esa segunda cifra también estaba mal: son **25**. Al contar, se tomaron las 22 reglas por hallazgos. Lo detectó la auditoría de esta fase.
+
+El auditor también señaló **información que faltaba**, y se añadió:
+- El `StrictMode` de `main.tsx` ejecuta dos veces el `useEffect` en desarrollo, así que hay 2 peticiones por carga.
+- `components.json` declara `"cssVariables": false` aunque el tema se basa en variables CSS.
+- Los datos se regeneran en cada petición.
+- Las claves de periodo de `/summary`.
+- El valor por defecto de `/categories/top`.

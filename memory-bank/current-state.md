@@ -1,0 +1,71 @@
+---
+name: current-state
+description: Qué funciona hoy, carencias conocidas y siguientes prioridades técnicas
+last_verified: 2026-11-13 (sobre el commit 1b46bed y los cambios de la Fase 4)
+---
+
+# Estado actual
+
+> **Actualízalo** cada vez que se corrija una carencia, se añada funcionalidad o cambie el resultado de las comprobaciones (regla UR-03). La fecha y el commit de la cabecera indican cuándo se comprobó por última vez.
+
+## Qué funciona (comprobado el 2026-11-13)
+
+| Comprobación | Resultado |
+|---|---|
+| `docker compose up --build` | ✅ Los dos servicios en `running` |
+| `GET localhost:8000/health` | ✅ `{"status":"ok"}` |
+| `GET localhost:5173/api/metrics` (a través del proxy) | ✅ 360 movimientos, del 2025-11-01 al 2026-10-28 |
+| Los 9 endpoints (con parámetros válidos) | ✅ 200. `/api/metrics/comparison` sin sus fechas obligatorias devuelve 422 |
+| Dashboard en `localhost:5173` | ✅ 4 KPIs y 2 gráficas con 12 meses |
+| `pytest` | ✅ 15 passed (1 aviso, ver carencias) |
+| `npm test` | ✅ 6 passed |
+| `npm run lint` | ✅ Sin errores |
+| `npm run build` | ✅ Correcto (1 aviso de tamaño, ver carencias) |
+| Agrupación mensual en `America/New_York` | ✅ 12 meses (corregido en `94b6fd1`) |
+
+## Historial reciente
+
+| Commit | Cambio |
+|---|---|
+| `cb29403` | Rastro de verificación del handover (Fase 1) |
+| `add3d9f` | Hallazgos de ingeniería y reglas propuestas (Fase 2). El documento dice 22 hallazgos, pero son 25: ver `verification.md`, Fase 4 |
+| `537f82b` | Reglas en `.agents/rules/` (Fase 3) |
+| `94b6fd1` | **fix:** bug de zona horaria en la agrupación mensual |
+| `f0dfdc5` | **test:** test de `comparison` sin fechas fijas y con valores |
+| `a99e418` | **docs:** requisitos previos y health check en los dos README |
+| `da0fccc` | **chore:** 31 dependencias del backend fijadas |
+| `1b46bed` | Reglas refinadas tras validarlas con tareas reales (Fase 3) |
+
+El detalle de cada verificación está en [`verification.md`](../verification.md), y el análisis de hallazgos en [`engineering-findings.md`](../engineering-findings.md).
+
+## Carencias conocidas
+
+Todas comprobadas en el código. El ID es el del hallazgo en `engineering-findings.md`.
+
+| Carencia | Evidencia | ID |
+|---|---|---|
+| La etiqueta de periodo dice "2024 - Full Year" (y "2024 — Full Year" como valor por defecto), pero los datos son de los 12 meses anteriores al actual | `App.tsx:49`, `dashboard-header.tsx:7` | A6 |
+| Código heredado sin usar: `mock-data.ts` y `assets/hero.png` | Ningún import | A6 |
+| 7 de los 8 endpoints `/api` no los usa el frontend | `App.tsx:16` es el único `fetch` | A5 |
+| Todo el backend está en un archivo, con el filtro `business_type` escrito en línea en 6 endpoints | `routes.py:278-386` | A4 |
+| El mensaje de error de la interfaz está en español, cuando el resto está en inglés | `App.tsx:37` | N6 |
+| No hay formateador, y conviven dos estilos de comillas y `;` | `frontend/src/**` | N3 |
+| El contrato de datos está duplicado a mano | `routes.py`, `financial-types.ts` | D1 |
+| No hay CI ni linter de Python | No existe `.github/` ni `pyproject.toml` | T4 |
+| `pytest` muestra `StarletteDeprecationWarning` (httpx con `TestClient`). Fijar versiones lo congela pero no lo elimina | Salida de `pytest` | E2 |
+| El frontend instala con `npm install` en lugar de `npm ci`, y las imágenes base no fijan la versión de parche | `frontend/Dockerfile:6`, `FROM python:3.13-slim` / `node:24-alpine` | E2 |
+| debugpy siempre activo y CORS `*` con credenciales | `backend/Dockerfile`, `main.py` | E3 |
+| El build avisa de un bundle JS de 584 kB (más de 500 kB) | Salida de `npm run build` | — |
+| La fuente `Inter` se declara pero no se carga, y el `<title>` de la página es "frontend" | `index.css:79`, `index.html` | — |
+| No hay tests de componentes React, solo de `lib/` | No hay testing-library | — |
+| TypeScript sin modo `strict`: `any` implícito y errores de `null` compilan | `tsconfig.app.json` | — |
+
+## Siguientes prioridades
+
+> En el repositorio **no hay roadmap de producto**. Estas son prioridades **técnicas** que salen de las carencias de arriba, ordenadas por impacto en quien edite el proyecto. No son funcionalidades acordadas.
+
+1. **Calcular la etiqueta de periodo a partir de los datos** y unificar sus dos copias (A6). Es lo único que muestra información incorrecta al usuario.
+2. **Pasar a inglés el mensaje de error** de `App.tsx:37` (N6, regla FE-07).
+3. **Añadir CI** que ejecute los cuatro comandos de la regla TE-01 (T4).
+4. **Eliminar el aviso de Starlette**, por ejemplo cambiando el cliente de test (E2).
+5. **Decidir qué hacer con el código heredado** (`mock-data.ts`, `hero.png`) y con los endpoints que no se usan. Es una decisión del equipo: BE-02 impide borrar endpoints y BE-03 impide borrar `mock-data.ts` sin que se pida.

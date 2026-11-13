@@ -74,7 +74,7 @@ Leyenda: 🟢 convención (hay que respetarla) · 🔴 riesgo (hay que evitarlo 
 | G1 | Los commits recientes siguen Conventional Commits en inglés (los más antiguos no) | 🟢 | `git log`: `eeece05 feat: …`, `fb7dd96 docs: …`, `9c3e480 chore: …`, `cb29403 docs: …` | Debe proponer mensajes con el mismo formato |
 | G2 | README duplicado en inglés y en español | 🔴 | [`README.md`](README.md), [`README.es.md`](README.es.md) | Editará uno solo y el otro quedará desactualizado |
 
-**Total: 22 hallazgos** (9 convenciones y 13 riesgos).
+**Total: 25 hallazgos** (10 convenciones y 15 riesgos). *(Corregido en la Fase 4: hasta entonces decía 22, con 9 convenciones y 13 riesgos.)*
 
 ### Descartados
 
@@ -169,7 +169,7 @@ Cada regla indica el archivo de `.agents/rules/` donde se implementará en la Fa
 | G1 | GD-01 |
 | G2 | GD-02 |
 
-Los 22 hallazgos tienen al menos una regla, y las 22 reglas citan al menos un hallazgo.
+Los 25 hallazgos tienen al menos una regla, y las 22 reglas citan al menos un hallazgo.
 
 **Reglas añadidas en la Fase 3:** [`using-rules.md`](.agents/rules/using-rules.md) incluye UR-01 (qué archivo de reglas leer según lo que se edite) y UR-02 (toda regla debe apoyarse en evidencia). No proceden de un hallazgo de este documento, sino de [`AGENTS.md`](AGENTS.md), que obliga a revisar `./.agents/rules` pero no dice qué archivo aplica a cada tarea, y de las instrucciones del proyecto, que exigen que cada regla mapee a un hecho del repositorio. UR-01 se apoya además en D1, porque el contrato de datos obliga a leer las reglas de backend y frontend a la vez.
 

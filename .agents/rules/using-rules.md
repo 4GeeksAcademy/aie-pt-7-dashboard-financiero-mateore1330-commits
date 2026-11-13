@@ -44,6 +44,27 @@ Reglas para cualquier coding agent (o persona) que edite este repositorio. Todas
 
 **Cómo comprobarlo:** cada regla de esta carpeta tiene un **Por qué** con una ruta del repositorio, y su hallazgo aparece en la tabla de trazabilidad de `engineering-findings.md`.
 
+## UR-03 · Mantén el `memory-bank` al día
+
+**Regla:** Lee [`memory-bank/`](../../memory-bank/) al empezar a trabajar en el repositorio. Si tu cambio hace que deje de ser cierto algo de lo que dice, actualízalo **en el mismo commit**:
+
+| Si cambias… | Actualiza |
+|---|---|
+| Dependencias, versiones, Dockerfiles, puertos o comandos | [`tech-stack.md`](../../memory-bank/tech-stack.md) |
+| Endpoints, parámetros, campos del contrato o lo que muestra el dashboard | [`product-overview.md`](../../memory-bank/product-overview.md) |
+| Cómo fluyen los datos, dónde vive una responsabilidad o un acoplamiento | [`architecture.md`](../../memory-bank/architecture.md) |
+| Corriges una carencia, añades una o cambia el resultado de las comprobaciones | [`current-state.md`](../../memory-bank/current-state.md) |
+
+Actualiza también el campo `last_verified` del archivo con la fecha y el commit en que lo comprobaste.
+
+**Por qué:** [`AGENTS.md`](../../AGENTS.md) manda leer el `memory-bank` antes de actuar. Su contenido está ligado a hechos que cambian: por ejemplo, `current-state.md` cita 15 tests de backend y 6 de frontend, y `tech-stack.md` cita las versiones instaladas. En la Fase 3 ya ocurrió que hallazgos corregidos (T2, D2) siguieran descritos como vigentes en `engineering-findings.md` hasta que un agente lo detectó.
+
+**✅ Haz:** al fijar una dependencia nueva, actualizar su fila en `tech-stack.md` en el mismo commit.
+
+**❌ Evita:** corregir una carencia y dejarla en la lista de `current-state.md`, o escribir en el `memory-bank` funcionalidades o planes que no existen en el código.
+
+**Cómo comprobarlo:** en el diff de un cambio que afecta a alguna fila de la tabla, aparece también el archivo correspondiente de `memory-bank/`.
+
 ### Plantilla de un archivo de reglas
 
 ```markdown
@@ -72,7 +93,7 @@ scope: <rutas a las que aplica, por ejemplo frontend/src/**>
 
 | Archivo | Alcance | Reglas |
 |---|---|---|
-| [`using-rules.md`](using-rules.md) | Todo el repositorio | UR-01, UR-02 |
+| [`using-rules.md`](using-rules.md) | Todo el repositorio | UR-01 a UR-03 |
 | [`frontend.md`](frontend.md) | `frontend/src/**` | FE-01 a FE-10 |
 | [`backend.md`](backend.md) | `backend/app/**` | BE-01 a BE-05 |
 | [`testing.md`](testing.md) | `backend/tests/**`, `frontend/src/**/*.test.ts` | TE-01 a TE-04 |
