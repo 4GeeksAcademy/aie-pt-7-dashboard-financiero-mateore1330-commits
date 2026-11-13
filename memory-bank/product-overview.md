@@ -28,7 +28,7 @@ Una sola página ([`App.tsx`](../frontend/src/App.tsx)) con:
 | Gráfica "Income vs. Outcome" | Ingresos y gastos por mes | `income-outcome-chart.tsx` |
 | Gráfica "Profit Margin %" | Margen de beneficio por mes | `profit-percent-chart.tsx` |
 
-- Mientras cargan los datos se muestran *skeletons*. Si la API falla, aparece un mensaje de error (en español, `App.tsx:37`), las tarjetas KPI muestran "—" y las gráficas, "No data available to display".
+- Mientras cargan los datos se muestran *skeletons*. Si la API falla, aparece un mensaje de error (`App.tsx:37`), las tarjetas KPI muestran "—" y las gráficas, "No data available to display".
 - La interfaz se muestra siempre en modo oscuro (clase `dark` en `App.tsx:46`).
 - No hay filtros, navegación ni interacción, salvo los *tooltips* de las gráficas.
 

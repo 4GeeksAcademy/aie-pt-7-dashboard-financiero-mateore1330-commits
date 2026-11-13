@@ -192,4 +192,10 @@ Las tablas de arriba reflejan el repositorio en la Fase 2. Durante la validació
 | E1 (confusión de puertos y `/health`) | ✅ Documentado | `a99e418` | README en los dos idiomas, regla EN-01 |
 | E2 (dependencias sin versión fija) | ✅ Corregido en el backend | Fase 3 (T-C) | 31 paquetes fijados con `==`, regla EN-02. El aviso de Starlette sigue: fijar versiones lo congela pero no lo elimina |
 
+Después de la Fase 4 se corrigió también:
+
+| Hallazgo | Estado | Commit | Qué lo protege ahora |
+|---|---|---|---|
+| N6 (mensaje de error en español) | ✅ Corregido | `fix: translate dashboard error message to english` | Regla FE-07 |
+
 Los demás hallazgos siguen vigentes.

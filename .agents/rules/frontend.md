@@ -95,11 +95,11 @@ En un archivo nuevo, copia el estilo del archivo más parecido de su misma carpe
 
 **Regla:** Escribe en inglés todos los textos que ve el usuario: títulos, etiquetas, descripciones, mensajes vacíos y mensajes de error.
 
-**Por qué:** [`index.html:2`](../../frontend/index.html#L2) declara `lang="en"`, y todos los textos de los componentes están en inglés ("Financial Overview", "No data available to display"). La única excepción es el mensaje de error en español de [`App.tsx:37`](../../frontend/src/App.tsx#L37) (hallazgo N6).
+**Por qué:** [`index.html:2`](../../frontend/index.html#L2) declara `lang="en"`, y todos los textos de los componentes están en inglés ("Financial Overview", "No data available to display"). El único texto en español, el mensaje de error de [`App.tsx:37`](../../frontend/src/App.tsx#L37), ya se tradujo (hallazgo N6).
 
 **✅ Haz:** `"Could not load financial data. Check the backend API."`
 
-**❌ Evita:** añadir textos nuevos en español, o copiar el estilo del mensaje de `App.tsx:37`.
+**❌ Evita:** añadir textos nuevos en español, como el antiguo `"No se pudo cargar la informacion financiera..."`.
 
 **Cómo comprobarlo:** revisa en el diff los textos visibles nuevos.
 

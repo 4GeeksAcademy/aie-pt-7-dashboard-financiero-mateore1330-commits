@@ -1,7 +1,7 @@
 ---
 name: current-state
 description: Qué funciona hoy, carencias conocidas y siguientes prioridades técnicas
-last_verified: 2026-11-13 (sobre el commit 1b46bed y los cambios de la Fase 4)
+last_verified: 2026-11-13 (sobre el commit 57d00da y la traducción del mensaje de error)
 ---
 
 # Estado actual
@@ -35,6 +35,9 @@ last_verified: 2026-11-13 (sobre el commit 1b46bed y los cambios de la Fase 4)
 | `a99e418` | **docs:** requisitos previos y health check en los dos README |
 | `da0fccc` | **chore:** 31 dependencias del backend fijadas |
 | `1b46bed` | Reglas refinadas tras validarlas con tareas reales (Fase 3) |
+| `290c865` | Memory bank (Fase 4) |
+| `57d00da` | **docs:** entregables del proyecto en los dos README |
+| — | **fix:** mensaje de error de la interfaz traducido al inglés (N6) |
 
 El detalle de cada verificación está en [`verification.md`](../verification.md), y el análisis de hallazgos en [`engineering-findings.md`](../engineering-findings.md).
 
@@ -48,7 +51,6 @@ Todas comprobadas en el código. El ID es el del hallazgo en `engineering-findin
 | Código heredado sin usar: `mock-data.ts` y `assets/hero.png` | Ningún import | A6 |
 | 7 de los 8 endpoints `/api` no los usa el frontend | `App.tsx:16` es el único `fetch` | A5 |
 | Todo el backend está en un archivo, con el filtro `business_type` escrito en línea en 6 endpoints | `routes.py:278-386` | A4 |
-| El mensaje de error de la interfaz está en español, cuando el resto está en inglés | `App.tsx:37` | N6 |
 | No hay formateador, y conviven dos estilos de comillas y `;` | `frontend/src/**` | N3 |
 | El contrato de datos está duplicado a mano | `routes.py`, `financial-types.ts` | D1 |
 | No hay CI ni linter de Python | No existe `.github/` ni `pyproject.toml` | T4 |
@@ -65,7 +67,6 @@ Todas comprobadas en el código. El ID es el del hallazgo en `engineering-findin
 > En el repositorio **no hay roadmap de producto**. Estas son prioridades **técnicas** que salen de las carencias de arriba, ordenadas por impacto en quien edite el proyecto. No son funcionalidades acordadas.
 
 1. **Calcular la etiqueta de periodo a partir de los datos** y unificar sus dos copias (A6). Es lo único que muestra información incorrecta al usuario.
-2. **Pasar a inglés el mensaje de error** de `App.tsx:37` (N6, regla FE-07).
-3. **Añadir CI** que ejecute los cuatro comandos de la regla TE-01 (T4).
-4. **Eliminar el aviso de Starlette**, por ejemplo cambiando el cliente de test (E2).
-5. **Decidir qué hacer con el código heredado** (`mock-data.ts`, `hero.png`) y con los endpoints que no se usan. Es una decisión del equipo: BE-02 impide borrar endpoints y BE-03 impide borrar `mock-data.ts` sin que se pida.
+2. **Añadir CI** que ejecute los cuatro comandos de la regla TE-01 (T4).
+3. **Eliminar el aviso de Starlette**, por ejemplo cambiando el cliente de test (E2).
+4. **Decidir qué hacer con el código heredado** (`mock-data.ts`, `hero.png`) y con los endpoints que no se usan. Es una decisión del equipo: BE-02 impide borrar endpoints y BE-03 impide borrar `mock-data.ts` sin que se pida.
