@@ -101,6 +101,31 @@ describe("computeMonthlyData", () => {
       profitPercent: 100,
     });
   });
+
+  it("groups movements dated on the 1st into their own month", () => {
+    const firstOfMonthMovements: FinancialMovement[] = [
+      {
+        create_date: "2026-02-01",
+        amount: 400,
+        operation_type: "income",
+        category: "sales",
+        business_type: "B2B",
+      },
+      {
+        create_date: "2026-01-31",
+        amount: 100,
+        operation_type: "outcome",
+        category: "suppliers",
+        business_type: "B2C",
+      },
+    ];
+    const monthlyData = computeMonthlyData(firstOfMonthMovements);
+
+    expect(monthlyData).toEqual([
+      { month: "Jan 2026", income: 0, outcome: 100, profitPercent: 0 },
+      { month: "Feb 2026", income: 400, outcome: 0, profitPercent: 100 },
+    ]);
+  });
 });
 
 describe("formatters", () => {
