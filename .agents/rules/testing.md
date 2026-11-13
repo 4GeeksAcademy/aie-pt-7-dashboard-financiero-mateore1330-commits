@@ -10,7 +10,7 @@ Aplican a cualquier tarea que cambie código, además de a los tests en `backend
 
 ## TE-01 · Verifica todo antes de terminar
 
-**Regla:** Antes de dar una tarea por terminada, con los servicios levantados (`docker compose up --build`), ejecuta estos cuatro comandos y comprueba que pasan:
+**Regla:** Antes de dar una tarea que cambie código por terminada, ejecuta estos cuatro comandos con los servicios levantados y comprueba que pasan:
 
 ```bash
 docker compose exec backend python -m pytest -q
@@ -19,11 +19,16 @@ docker compose exec frontend npm run lint
 docker compose exec frontend npm run build
 ```
 
-Informa del resultado de cada uno. Si alguno falla, la tarea no está terminada.
+- Ejecuta los cuatro aunque solo hayas cambiado un lado (backend o frontend).
+- Comprueba con `docker compose ps` que los servicios están levantados. Reconstruye (`docker compose up --build`) solo si has cambiado dependencias, un `Dockerfile` o `docker-compose.yml` (ver [EN-02](environment.md#en-02--dependencias-con-versión-fija-y-lockfile-en-el-commit)).
+- Si la tarea **solo cambia archivos `.md`**, estos comandos no son obligatorios. En su lugar, ejecuta los comandos y URLs que documentes, para comprobar que funcionan como dices (ver [EN-01](environment.md#en-01--levanta-y-verifica-los-servicios-con-docker-compose)).
+- Si `git status` muestra cambios sin commitear que no son tuyos, indícalo en el resumen, porque los resultados también los incluyen. No los toques, y propón un `git add` solo con tus archivos.
+
+Informa del resultado de cada comando. Si alguno falla, la tarea no está terminada.
 
 **Por qué:** no hay CI, ni linter o formateador de Python, ni `pre-commit` (hallazgo T4). Además, `npm run lint` no detecta las variables ni los parámetros sin usar, pero `npm run build` sí (`tsc -b` con `noUnusedLocals` y `noUnusedParameters`, en [`tsconfig.app.json:22-23`](../../frontend/tsconfig.app.json#L22-L23)), así que pasar el lint no basta (hallazgo T5).
 
-**✅ Haz:** "pytest 15 passed · vitest 5 passed · lint OK · build OK".
+**✅ Haz:** "pytest N passed · vitest N passed · lint OK · build OK", con el número real de tests de ese momento.
 
 **❌ Evita:** ejecutar solo los tests del lado que has cambiado, o dar por bueno un cambio porque pasa el lint. Un cambio en el contrato de datos rompe el otro lado (BE-03).
 
@@ -51,9 +56,9 @@ def test_top_categories_returns_limited_sorted_categories():
 
 ## TE-03 · No escribas fechas fijas en tests que dependen de los datos mock
 
-**Regla:** Los datos mock dependen de la fecha actual, así que no escribas fechas fijas en tests que usen esos datos. Obtén las fechas de los propios datos (de la respuesta de la API o de `generate_mock_movements(seed=42)`). Comprueba **valores**, no solo que existan las claves.
+**Regla:** Los datos mock dependen de la fecha actual, así que no escribas fechas fijas en tests que usen esos datos. Obtén las fechas, y también los **umbrales de valor** (importes mínimos, límites…), de los propios datos: de la respuesta de la API o de `generate_mock_movements(seed=42)`. Comprueba **valores**, no solo que existan las claves.
 
-**Por qué:** `_year_for_month` asigna los años según `date.today()` ([`routes.py`](../../backend/app/routes.py)), así que el rango de datos cambia cada mes (hallazgo D3). [`test_routes.py:160`](../../backend/tests/test_routes.py#L160) consulta `2025-03-01` a `2025-03-31`, que ya queda fuera del rango, y pasa porque solo comprueba los nombres de las claves (hallazgo T2).
+**Por qué:** `_year_for_month` asigna los años según `date.today()` ([`routes.py`](../../backend/app/routes.py)), así que el rango de datos cambia cada mes (hallazgo D3). `test_metrics_comparison_returns_delta_fields` consultaba `2025-03-01` a `2025-03-31`, que ya quedaba fuera del rango, y pasaba porque solo comprobaba los nombres de las claves (hallazgo T2). Se corrigió en el commit `f0dfdc5`, y hoy [`test_routes.py`](../../backend/tests/test_routes.py) no contiene ninguna fecha literal.
 
 **✅ Haz:** como `test_metrics_endpoint_respects_date_filters`:
 ```python
@@ -62,7 +67,7 @@ response = client.get("/api/metrics", params={"start_date": first_date, "end_dat
 assert all(item["create_date"] == first_date for item in response.json())
 ```
 
-**❌ Evita:** `params={"start_date": "2025-03-01", ...}` seguido solo de `assert set(payload.keys()) == {...}`.
+**❌ Evita:** `params={"start_date": "2025-03-01", ...}` o `params={"min_amount": 5000}` seguidos solo de `assert set(payload.keys()) == {...}`. Mejor: `threshold = sorted(m.amount for m in movements)[len(movements) // 2]`.
 
 **Cómo comprobarlo:** el test no contiene literales de fecha `YYYY-MM-DD` (salvo en datos construidos dentro del propio test) y falla si se rompe el cálculo que comprueba.
 
@@ -78,10 +83,10 @@ docker compose exec -u root frontend apk add --no-cache tzdata   # una vez por c
 docker compose exec -e TZ=America/New_York frontend npm test
 ```
 
-**Por qué:** la imagen `node:24-alpine` no trae datos de zonas horarias: sin `tzdata`, `TZ=America/New_York` no tiene efecto (`getTimezoneOffset()` devuelve 0) y el bug D2 queda oculto. Además, los tests actuales de [`financial-utils.test.ts:63-104`](../../frontend/src/lib/financial-utils.test.ts#L63-L104) solo usan los días 3, 5 y 8 (hallazgo T3). El `node_modules` del host está vacío porque el compose lo monta como volumen anónimo, así que los tests no se pueden ejecutar fuera del contenedor sin instalar dependencias.
+**Por qué:** la imagen `node:24-alpine` no trae datos de zonas horarias: sin `tzdata`, `TZ=America/New_York` no tiene efecto (`getTimezoneOffset()` devuelve 0) y el bug D2 quedó oculto en la Fase 2 (hallazgo T3). Hasta el commit `94b6fd1`, los tests de `computeMonthlyData` solo usaban los días 3, 5 y 8. Ahora existe el caso `"groups movements dated on the 1st into their own month"`, que falla con el código anterior en `America/New_York` y pasa con el actual. El `node_modules` del host está vacío porque el compose lo monta como volumen anónimo, así que los tests no se pueden ejecutar fuera del contenedor sin instalar dependencias.
 
 **✅ Haz:** comprobar primero que la zona horaria se aplica (`docker compose exec -e TZ=America/New_York frontend node -e 'console.log(new Date().getTimezoneOffset())'` debe dar `300` o `240`) y después ejecutar `npm test` con ese `TZ`.
 
 **❌ Evita:** ejecutar `TZ=America/New_York npm test` sin `tzdata` y concluir que funciona.
 
-**Cómo comprobarlo:** el test del día 1 pasa con y sin `TZ=America/New_York`, y fallaría con el código anterior a la corrección. `tzdata` desaparece al reconstruir la imagen, así que hay que repetir el paso 2 tras cada `docker compose up --build`.
+**Cómo comprobarlo:** el test del día 1 pasa con y sin `TZ=America/New_York`, y fallaría con el código anterior a la corrección. `tzdata` desaparece cada vez que el contenedor se **recrea** (`docker compose up --build`, `docker compose down` seguido de `up`, o un cambio en `docker-compose.yml`). Si el comando de comprobación del offset vuelve a dar `0`, repite la instalación del paso 2.

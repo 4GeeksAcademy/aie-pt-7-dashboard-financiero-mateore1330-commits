@@ -121,7 +121,7 @@ Cada regla indica el archivo de `.agents/rules/` donde se implementará en la Fa
 | TE-01 | Antes de dar una tarea por terminada, ejecuta dentro de Docker: `pytest` en el backend, y `npm test`, `npm run lint` y `npm run build` en el frontend. No hay CI que lo haga, y el lint no detecta los errores de TypeScript que detecta el build. | T4, T5 |
 | TE-02 | Escribe los tests del backend en `backend/tests/` con `TestClient` y nómbralos `test_<qué>_<resultado_esperado>`. | T1 |
 | TE-03 | No escribas fechas fijas en tests que dependan de los datos mock. Obtenlas de la respuesta de la API, como hace `test_metrics_endpoint_respects_date_filters`. Comprueba valores, no solo que existan las claves. | D3, T2 |
-| TE-04 | Si cambias la lógica de fechas del frontend, añade un caso con una fecha en día 1 y ejecuta los tests con una zona horaria de UTC negativo (por ejemplo `TZ=America/New_York`) fuera del contenedor, porque la imagen Alpine no trae datos de zonas horarias. | D2, T3 |
+| TE-04 | Si cambias la lógica de fechas del frontend, añade un caso con una fecha en día 1 y ejecuta los tests con una zona horaria de UTC negativo (por ejemplo `TZ=America/New_York`). *(Propuesta original: "fuera del contenedor". En la Fase 3 se comprobó que eso no es posible y la regla final instala `tzdata` dentro del contenedor; ver `verification.md`.)* | D2, T3 |
 
 ### `environment.md`
 
@@ -157,7 +157,7 @@ Cada regla indica el archivo de `.agents/rules/` donde se implementará en la Fa
 | N6 | FE-07 |
 | D1 | BE-03 |
 | D2 | FE-09, TE-04 |
-| D3 | TE-03 |
+| D3 | TE-03, BE-05 |
 | T1 | TE-02 |
 | T2 | TE-03 |
 | T3 | TE-04 |
@@ -173,7 +173,23 @@ Los 22 hallazgos tienen al menos una regla, y las 22 reglas citan al menos un ha
 
 **Reglas añadidas en la Fase 3:** [`using-rules.md`](.agents/rules/using-rules.md) incluye UR-01 (qué archivo de reglas leer según lo que se edite) y UR-02 (toda regla debe apoyarse en evidencia). No proceden de un hallazgo de este documento, sino de [`AGENTS.md`](AGENTS.md), que obliga a revisar `./.agents/rules` pero no dice qué archivo aplica a cada tarea, y de las instrucciones del proyecto, que exigen que cada regla mapee a un hecho del repositorio. UR-01 se apoya además en D1, porque el contrato de datos obliga a leer las reglas de backend y frontend a la vez.
 
+**Regla añadida tras la validación (Fase 3):** BE-05 (no alterar la secuencia aleatoria de los datos mock) amplía el hallazgo D3. Al planificar un campo nuevo, el agente de validación detectó que cualquier llamada extra a `random` cambia todo el conjunto de `seed=42`, y se comprobó que con una sola llamada extra solo 2 de 360 movimientos siguen iguales.
+
 ## Pendiente para fases siguientes
 
 - **Bug D2 (zona horaria):** se documenta aquí y no se arregla en esta fase. Se propone usarlo como tarea real para validar las reglas FE-08, FE-09, TE-01 y TE-04 en la Fase 3.
 - Las incoherencias A6 (etiqueta "2024") y N6 (mensaje en español) quedan documentadas. Solo se corregirán si hace falta para validar una regla.
+
+## Estado tras la Fase 3
+
+Las tablas de arriba reflejan el repositorio en la Fase 2. Durante la validación de reglas de la Fase 3 se corrigieron estos hallazgos:
+
+| Hallazgo | Estado | Commit | Qué lo protege ahora |
+|---|---|---|---|
+| D2 (bug de zona horaria) | ✅ Corregido | `94b6fd1` | Test `"groups movements dated on the 1st into their own month"`, regla FE-09 |
+| T2 (test con fechas fijas) | ✅ Corregido | `f0dfdc5` | `test_routes.py` sin fechas literales, regla TE-03 |
+| T3 (sin tests de día 1 ni zonas horarias) | ✅ Corregido en parte | `94b6fd1` | Existe el caso de día 1. La imagen sigue sin `tzdata`, de ahí el método de TE-04 |
+| E1 (confusión de puertos y `/health`) | ✅ Documentado | `a99e418` | README en los dos idiomas, regla EN-01 |
+| E2 (dependencias sin versión fija) | ✅ Corregido en el backend | Fase 3 (T-C) | 31 paquetes fijados con `==`, regla EN-02. El aviso de Starlette sigue: fijar versiones lo congela pero no lo elimina |
+
+Los demás hallazgos siguen vigentes.

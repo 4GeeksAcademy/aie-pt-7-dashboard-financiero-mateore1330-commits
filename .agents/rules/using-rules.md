@@ -74,7 +74,7 @@ scope: <rutas a las que aplica, por ejemplo frontend/src/**>
 |---|---|---|
 | [`using-rules.md`](using-rules.md) | Todo el repositorio | UR-01, UR-02 |
 | [`frontend.md`](frontend.md) | `frontend/src/**` | FE-01 a FE-10 |
-| [`backend.md`](backend.md) | `backend/app/**` | BE-01 a BE-04 |
+| [`backend.md`](backend.md) | `backend/app/**` | BE-01 a BE-05 |
 | [`testing.md`](testing.md) | `backend/tests/**`, `frontend/src/**/*.test.ts` | TE-01 a TE-04 |
 | [`environment.md`](environment.md) | Docker, dependencias y configuración de Vite | EN-01, EN-02 |
 | [`git-and-docs.md`](git-and-docs.md) | Commits y `README*.md` | GD-01, GD-02 |

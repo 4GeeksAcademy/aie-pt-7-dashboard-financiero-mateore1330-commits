@@ -131,3 +131,65 @@ Estos hallazgos no forman parte del resumen, pero se detectaron durante la verif
 | Comandos de "Cómo comprobarlo" de FE-01, FE-02, FE-03, FE-06 y FE-10 sobre el código actual | ✅ Dan el resultado que indica cada regla |
 | Comando de comprobación de EN-02 | ❌ Lista los 6 paquetes sin versión. Es lo esperado: la tarea de validación T-C debe corregirlo |
 | Líneas citadas en las reglas (`kpi-card.tsx:37`, `income-outcome-chart.tsx:50` y `:113`, `profit-percent-chart.tsx:51`, `index.html:2`, `Dockerfile:6`, `test_routes.py:160`) | ✅ Contienen lo que se cita |
+
+### Validación de las reglas con tareas reales
+
+**Método:** cada tarea la hizo un **agente nuevo, sin el contexto de esta conversación**. Solo se le indicó que leyera `AGENTS.md` y siguiera sus instrucciones, sin pistas sobre la solución ni sobre qué reglas aplicar. El agente que redactó las reglas revisó después cada diff y cada plan contra las reglas, y comprobó por su cuenta las afirmaciones nuevas de los agentes. Los agentes no hicieron commits; los hizo la persona responsable del repositorio.
+
+#### Ronda 1: seis tareas
+
+| Tarea | Enunciado dado al agente | Tipo | Resultado | Reglas que guiaron el trabajo |
+|---|---|---|---|---|
+| T-A | "Usuarios en EE. UU. ven un mes extra (octubre 2025) y los movimientos del día 1 aparecen en el mes anterior. Arréglalo." | Real → `94b6fd1` | ✅ | FE-09 (`slice(0, 7)`), FE-08, FE-04, TE-04 (instaló `tzdata` y comprobó que el test nuevo **falla con el código anterior** en `America/New_York`), TE-01 (eliminó el helper que quedaba sin usar porque `npm run build` habría fallado) |
+| T-B | "El test `test_metrics_comparison_returns_delta_fields` parece frágil y no comprueba gran cosa. Mejóralo." | Real → `f0dfdc5` | ✅ | TE-03 (fechas sacadas de los datos y comprobación de valores), TE-02, BE-02. Comprobó con mutaciones en memoria que el test detecta la lógica rota |
+| T-C | "Cada build puede instalar versiones distintas y ha aparecido un aviso nuevo en los tests. Haz las instalaciones del backend reproducibles." | Real (pendiente de commit) | ✅ | EN-02 (31 paquetes con `==`, sin cambiar ninguna versión), BE-04 (no tocó el `Dockerfile`; propuso fijar la imagen base en lugar de hacerlo), BE-05 (huella de datos igual antes y después) |
+| T-D | "Un compañero se lio al arrancar el proyecto y creyó que el backend estaba bien porque una URL daba 200. Mejora la documentación." | Real → `a99e418` | ✅ | GD-02 (los dos README con los mismos 8 encabezados), EN-01 (tabla de URLs y aviso sobre `5173/health`) |
+| T-E | "Queremos una tarjeta KPI de beneficio medio mensual." | Solo plan | ✅ | FE-01, FE-02, FE-05, FE-06, FE-07, FE-08, FE-09 y TE-04 (caso de día 1 por iniciativa propia) |
+| T-F | "Los movimientos necesitan un campo `currency` y el frontend quiere llamar a la API desde `localhost:4000`." | Solo plan | ✅ | **BE-04:** comprobó con `curl` que la configuración CORS actual **ya permite** ese origen y no propuso cambiarla. **BE-03:** planificó backend, TypeScript, datos de ejemplo y `mock-data.ts` juntos |
+
+**Fallos de las reglas detectados en la ronda 1 y refinamientos aplicados:**
+
+| # | Regla | Problema detectado | Detectado por | Refinamiento |
+|---|---|---|---|---|
+| 1 | FE-04 | Decía que `lib/` usa comillas dobles, pero `financial-types.ts` usa simples | T-E | Tabla de estilos por archivo |
+| 2 | BE-02 / TE-03 | BE-02 prohibía "cambiar tests existentes", y TE-03 obliga a arreglar los tests frágiles | T-B y T-F | Se permite reforzar tests; se prohíbe borrarlos o debilitarlos |
+| 3 | BE-02 / BE-03 | BE-02 decía "solo campos opcionales", pero el ejemplo de BE-03 añadía uno obligatorio | T-F | Lista explícita de cambios compatibles, incluidos los campos nuevos en las respuestas |
+| 4 | TE-01 | No decía qué hacer en cambios solo de documentación, con cambios ajenos sin commitear, ni cuándo reconstruir | T-D, T-B y T-A | Tres casos nuevos explícitos |
+| 5 | FE-09 | Citaba líneas que ya no existían tras el arreglo | T-A | Cita el commit del arreglo y el test que lo protege |
+| 6 | TE-04 | `tzdata` se pierde al **recrear** el contenedor, no solo con `--build`. `engineering-findings.md` mantenía la propuesta antigua ("fuera del contenedor") | T-A y T-E | Texto corregido, con cómo detectarlo (el offset vuelve a dar `0`). Nota en `engineering-findings.md` |
+| 7 | *(faltaba)* | Ninguna regla avisaba de que añadir una llamada a `random` cambia todos los datos de `seed=42` | T-F | **Nueva regla BE-05**. Verificado: con una llamada extra a `random.random()`, solo **2 de 360** movimientos siguen iguales. Incluye un comando de huella, cuya estabilidad se comprobó |
+| 8 | EN-02 | Solo hablaba de dependencias *nuevas*, y su "Por qué" quedó desactualizado tras T-C | T-C | Cubre las transitivas, `pip check` y el estado actual |
+
+Además, la guía de BE-04 se amplió con lo que hizo bien T-F: comprobar primero si la configuración actual ya permite lo que se pide.
+
+#### Ronda 2: nueva validación de las reglas refinadas
+
+Se dio a otro agente nuevo una tarea distinta, diseñada para pasar por las reglas cambiadas (solo plan): *"Añade un `description` aleatorio por categoría a los movimientos, un filtro opcional `min_amount` en `/api/metrics`, refuerza `test_metrics_summary_by_week_honors_business_type_filter` y documenta el filtro"*.
+
+| Regla refinada | ¿Siguió apareciendo el problema? | Evidencia en el plan |
+|---|---|---|
+| BE-02 / TE-03 (refinamiento 2) | ✅ No | Reforzó el test conservando todas sus aserciones, sin señalar ninguna contradicción |
+| BE-02 / BE-03 (refinamiento 3) | ✅ No | Trató el campo nuevo y el parámetro opcional como cambios compatibles |
+| FE-04 (refinamiento 1) | ✅ No | Comillas simples en `financial-types.ts` y `mock-data.ts`, dobles en `financial-utils.test.ts` |
+| BE-05 (refinamiento 7) | ✅ Aplicada | Generador `random.Random(seed)` independiente, y huella `653dc99efad4835b` antes y después |
+| TE-01 (refinamiento 4) | ✅ Aplicada | Avisó de los cambios ajenos sin commitear y propuso `git add` con rutas explícitas |
+| GD-02 | ✅ Aplicada | La misma subsección en los dos README |
+
+**Problemas nuevos detectados en la ronda 2 y refinamientos aplicados** (todos comprobados en el código antes de cambiar la regla):
+
+| # | Regla | Problema | Refinamiento |
+|---|---|---|---|
+| 9 | BE-03 | Solo listaba 2 de los 4 arrays `FinancialMovement[]` del test (faltaban `onlyOutcomes` y `firstOfMonthMovements`), así que seguirla al pie de la letra rompería el build | Pide **todos** los arrays e incluye el `grep` para encontrarlos. Aclara que `mock-data.ts` se mantiene compilando y no se borra salvo que se pida |
+| 10 | BE-01 | Solo cubría endpoints nuevos, no parámetros nuevos en uno existente. Su "Por qué" decía que *todos* los endpoints siguen el patrón, pero el filtro `business_type` está repetido en línea en 4 endpoints (`routes.py:280`, `:298`, `:314` y `:353`) | Cubre los parámetros nuevos, pide un helper `filter_movements_by_<criterio>` sin cambiar la firma de `filter_movements` (usada en 7 endpoints) y marca esa duplicación como algo que no hay que copiar |
+| 11 | TE-03 | Su evidencia (`test_routes.py:160`) quedó desactualizada tras `f0dfdc5`. Además, solo hablaba de fechas, no de umbrales de valor | Cita el commit del arreglo e incluye los umbrales de valor con un ejemplo |
+| 12 | GD-01 | No decía si los tests de un `feat` van en el mismo commit, ni cómo separar cambios que tocan el mismo archivo sin `git add -p` | Los tests van con su `feat` o `fix`. Los cambios en el mismo archivo se hacen en secuencia. `git add` siempre con rutas explícitas |
+| 13 | `engineering-findings.md` | Los hallazgos ya corregidos (T2, D2…) seguían descritos como vigentes, en contra de UR-02 | Nueva sección "Estado tras la Fase 3" con el commit de cada corrección |
+
+**Señalado por los agentes, pero no convertido en regla** (no se apoya en un hecho del repositorio, o es una decisión de producto): cómo definir "beneficio medio mensual", el tratamiento de varias monedas mezcladas, si `min_amount` debe repetirse en `/b2b` y `/b2c`, dónde documentar la API además del README, el idioma de los textos de los datos mock, la ausencia de tests de componentes y el trailer `Co-Authored-By` en los commits.
+
+#### Limitaciones de la validación
+
+- **T-A no es una prueba independiente de FE-09:** la regla nació del propio bug y ya describía la solución. Demuestra que la regla se encuentra y se aplica, pero no que guíe un problema nuevo. Las pruebas más fuertes son T-E, T-F y la ronda 2, donde las reglas se aplicaron a problemas que no describen.
+- T-E, T-F y la ronda 2 son **solo planes**: validan cómo razona el agente, no código ejecutado.
+- T-A, T-B, T-D, T-E y T-F se ejecutaron en paralelo sobre el mismo árbol de trabajo, así que los resultados de TE-01 de cada agente incluían cambios de los demás. Los diffs se revisaron por separado y cada tarea se commiteó solo con sus archivos.
+- Efectos secundarios en el entorno, sin cambios en el repositorio: se instaló `tzdata` en el contenedor del frontend, y T-C reconstruyó las imágenes, con lo que se recrearon los contenedores y `tzdata` desapareció.

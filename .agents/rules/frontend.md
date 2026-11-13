@@ -46,14 +46,15 @@ Aplican a `frontend/src/**`: React 19, TypeScript, Vite, Tailwind CSS 4, Rechart
 
 ## FE-04 · Respeta el estilo de cada archivo y no reformatees
 
-**Regla:** No hay formateador configurado. Respeta las comillas y los `;` del archivo que editas, y no reformatees líneas que no cambias. En archivos nuevos:
+**Regla:** No hay formateador configurado. Respeta las comillas y los `;` del archivo que editas, y no reformatees líneas que no cambias. El estilo **no es uniforme por carpeta**, así que míralo en cada archivo:
 
-| Carpeta | Estilo | Referencia |
-|---|---|---|
-| `components/**` | Comillas simples, sin `;` | `kpi-card.tsx`, `ui/card.tsx` |
-| `lib/` (lógica y tests) | Comillas dobles, con `;` | `financial-utils.ts`, `financial-utils.test.ts` |
+| Archivo | Estilo |
+|---|---|
+| `components/**`, `main.tsx`, `lib/financial-types.ts`, `lib/mock-data.ts` | Comillas simples, sin `;` |
+| `App.tsx`, `lib/financial-utils.ts`, `lib/financial-utils.test.ts` | Comillas dobles, con `;` |
+| `lib/utils.ts` | Comillas dobles, sin `;` |
 
-En JSX, los atributos van siempre con comillas dobles (`className="..."`), como en todo el proyecto.
+En un archivo nuevo, copia el estilo del archivo más parecido de su misma carpeta: un componente nuevo, como `kpi-card.tsx`; una función o test nuevo de `lib/`, como `financial-utils.ts`. En JSX, los atributos van siempre con comillas dobles (`className="..."`), como en todo el proyecto.
 
 **Por qué:** conviven dos estilos (por ejemplo, [`App.tsx`](../../frontend/src/App.tsx) usa comillas dobles con `;` y [`main.tsx`](../../frontend/src/main.tsx) comillas simples sin `;`), y no existe Prettier, `.editorconfig` ni nada equivalente (hallazgo N3). Reformatear un archivo entero esconde el cambio real dentro de un diff enorme.
 
@@ -118,11 +119,11 @@ En JSX, los atributos van siempre con comillas dobles (`className="..."`), como 
 
 **Regla:** Para agrupar o comparar fechas `YYYY-MM-DD` de la API (`create_date`), no uses `new Date(str)` seguido de métodos locales (`getMonth()`, `getFullYear()`, `getDate()`). Usa el texto de la fecha (`create_date.slice(0, 7)` para `YYYY-MM`) o, si necesitas un `Date`, los métodos UTC (`getUTCMonth()`, `getUTCFullYear()`).
 
-**Por qué:** `new Date("2025-11-01")` se interpreta como medianoche UTC, pero `getMonth()` usa la hora local. Por eso `toYearMonthKey(new Date(m.create_date))` ([`financial-utils.ts:8`](../../frontend/src/lib/financial-utils.ts#L8) y [`:42`](../../frontend/src/lib/financial-utils.ts#L42)) coloca los movimientos del día 1 en el mes anterior en zonas con UTC negativo: con los datos reales de la API, `America/New_York` muestra 13 meses en lugar de 12 (hallazgo D2).
+**Por qué:** `new Date("2025-11-01")` se interpreta como medianoche UTC, pero `getMonth()` usa la hora local. `computeMonthlyData` agrupaba así (`toYearMonthKey(new Date(m.create_date))`) y colocaba los movimientos del día 1 en el mes anterior en zonas con UTC negativo: con los datos reales de la API, `America/New_York` mostraba 13 meses en lugar de 12 (hallazgo D2). Se corrigió en el commit `94b6fd1` con `create_date.slice(0, 7)`, y el test `"groups movements dated on the 1st into their own month"` de [`financial-utils.test.ts`](../../frontend/src/lib/financial-utils.test.ts) lo protege. Esta regla evita que el patrón vuelva en código nuevo.
 
 **✅ Haz:** `const yearMonthKey = m.create_date.slice(0, 7);`
 
-**❌ Evita:** `toYearMonthKey(new Date(m.create_date))`. En cambio, `new Date(year, month, 1)` con números, como en `formatMonthYearLabel`, sí es correcto, porque crea la fecha directamente en hora local.
+**❌ Evita:** `new Date(m.create_date).getMonth()` o cualquier helper que reciba un `Date` creado a partir de `create_date` y use métodos locales. En cambio, `new Date(year, month, 1)` con números, como en `formatMonthYearLabel`, sí es correcto, porque crea la fecha directamente en hora local.
 
 **Cómo comprobarlo:** aplica [TE-04](testing.md#te-04--prueba-la-lógica-de-fechas-en-una-zona-horaria-utc-negativa).
 

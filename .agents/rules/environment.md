@@ -33,15 +33,15 @@ No ejecutes `npm run dev` fuera de Docker sin definir `VITE_API_BASE_URL=http://
 
 **Regla:**
 
-- **Backend:** añade cada dependencia nueva a [`backend/requirements.txt`](../../backend/requirements.txt) con una versión exacta (`paquete==X.Y.Z`). Usa la versión instalada en el contenedor (`docker compose exec backend pip show <paquete>`).
+- **Backend:** todas las líneas de [`backend/requirements.txt`](../../backend/requirements.txt) llevan una versión exacta (`paquete==X.Y.Z`), incluidas las dependencias transitivas, que están en su propia sección comentada. Si añades una dependencia directa, instálala en el contenedor, fija su versión en la sección `# Direct dependencies` y añade a `# Transitive dependencies` los paquetes nuevos que aparezcan en `docker compose exec backend pip freeze`.
 - **Frontend:** instala dentro del contenedor con `docker compose exec frontend npm install <paquete>`, para que se actualicen `package.json` y `package-lock.json`, e incluye los dos en el commit.
 - No actualices ni cambies dependencias que no tengan que ver con la tarea.
 - Después de cambiar dependencias, reconstruye con `docker compose up --build`.
 
-**Por qué:** `requirements.txt` no tiene versiones, así que cada build instala lo más reciente. Ya ha provocado el aviso `StarletteDeprecationWarning: Using httpx with starlette.testclient is deprecated`, con Starlette 1.10.0 instalado. El [`frontend/Dockerfile:6`](../../frontend/Dockerfile#L6) usa `npm install`, que puede modificar `package-lock.json` (hallazgo E2).
+**Por qué:** hasta la Fase 3, `requirements.txt` no tenía versiones y cada build instalaba lo más reciente, lo que provocó el aviso `StarletteDeprecationWarning: Using httpx with starlette.testclient is deprecated` (Starlette 1.10.0). Ahora están fijados los 31 paquetes del contenedor. Starlette solo llega a través de FastAPI, así que sin fijar las transitivas su versión seguiría cambiando. Fijar las versiones congela el aviso pero no lo elimina: eliminarlo es otra tarea (por ejemplo, cambiar el cliente de test). El [`frontend/Dockerfile:6`](../../frontend/Dockerfile#L6) usa `npm install`, que puede modificar `package-lock.json` (hallazgo E2).
 
 **✅ Haz:** `fastapi==0.162.6` en `requirements.txt`.
 
 **❌ Evita:** añadir `pandas` sin versión, ejecutar `npm install` en el host, o hacer commit de `package.json` sin `package-lock.json`.
 
-**Cómo comprobarlo:** `grep -vE "==|^#|^$" backend/requirements.txt` no devuelve nada, y si `package.json` cambia en `git diff`, `package-lock.json` también.
+**Cómo comprobarlo:** `grep -vE "==|^#|^$" backend/requirements.txt` no devuelve nada, `docker compose exec backend pip check` no encuentra conflictos, y si `package.json` cambia en `git diff`, `package-lock.json` también.

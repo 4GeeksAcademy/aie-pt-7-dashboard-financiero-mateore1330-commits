@@ -27,7 +27,7 @@ Aplican a cualquier tarea que termine en un commit o que cambie la documentació
 | `chore` | Mantenimiento: dependencias, configuración, tooling |
 | `refactor` | Cambia el código sin cambiar el comportamiento |
 
-Haz un commit por cambio lógico. No mezcles, por ejemplo, un `fix` con una actualización de dependencias.
+Haz un commit por cambio lógico. No mezcles, por ejemplo, un `fix` con una actualización de dependencias. Los tests que acompañan a un `feat` o un `fix` van **en el mismo commit**: usa `test:` solo cuando el commit solo toca tests. Si dos cambios tocan el mismo archivo, hazlos y commitéalos uno detrás de otro, porque `git add -p` (interactivo) no está disponible para el agente. Haz `git add` con rutas explícitas, nunca `git add .` si hay cambios ajenos sin commitear.
 
 **Por qué:** los commits recientes ya siguen este formato: `eeece05 feat: use Vite API proxy and document frontend env setup`, `fb7dd96 docs: clarify project objectives and setup steps` y `9c3e480 chore: Ensure dates are generated in the correct order`. Los más antiguos no lo seguían, como `0c07552 Add anomaly alerts endpoint…` (hallazgo G1).
 
