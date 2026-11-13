@@ -89,3 +89,24 @@ Estos hallazgos no forman parte del resumen, pero se detectaron durante la verif
 - El `<title>` de [`index.html`](frontend/index.html) es `frontend`.
 - Toda la lógica del backend (modelos, generación de datos, filtros y endpoints) está en un único archivo, `routes.py`.
 - `generate_mock_movements(seed=...)` llama a `random.seed()`, que modifica el estado global del módulo `random`.
+
+---
+
+## Fase 2: Hallazgos de ingeniería
+
+**Fecha de verificación:** 2026-11-13. El análisis completo está en [`engineering-findings.md`](engineering-findings.md).
+
+### Correcciones (afirmación incorrecta → corrección)
+
+- **"El agrupado mensual funciona en cualquier zona horaria: `TZ=America/New_York npm test` pasa dentro del contenedor"** → Era un falso negativo. La imagen `node:24-alpine` no trae datos de zonas horarias, así que `TZ` no tiene efecto (`getTimezoneOffset()` devolvía 0). Repitiendo la prueba con Node en el host, `new Date("2024-02-01").getMonth()` devuelve enero en `America/New_York`. Con los datos reales de la API salen 13 meses en lugar de 12. Se documenta como bug D2 y riesgo T3.
+- **"Tras el filtrado quedan 16 hallazgos"** → Recuento erróneo del agente. Al contar las filas de la tabla salen **22** hallazgos. Las fusiones eran correctas y la cifra se corrigió antes de redactar las reglas.
+- **"El idioma de la interfaz es inglés porque casi todos los textos lo están"** → La conclusión era correcta pero la evidencia era débil. La revisión humana aportó una prueba explícita: `lang="en"` en [`frontend/index.html:2`](frontend/index.html#L2). Se añadió a la evidencia de N6.
+
+### Comprobaciones ejecutadas
+
+| Comprobación | Resultado |
+|---|---|
+| Agrupación por mes con los datos reales de `/api/metrics` en `Europe/Madrid` y `America/New_York` (Node en el host) | 12 meses frente a 13 meses. Bug confirmado |
+| Recuento de estilos de comillas y `;` en los imports de `frontend/src` | Dos estilos distintos según la carpeta (N3) |
+| Búsqueda de configuración de formateador, linter de Python o CI | No existe ninguna (N3, T4) |
+| `git log` | Conventional Commits solo en los commits recientes (G1) |
