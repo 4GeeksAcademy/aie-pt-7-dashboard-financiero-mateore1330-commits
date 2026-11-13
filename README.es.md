@@ -17,6 +17,19 @@ _These instructions are [available in English](./README.md)._
 
 _Dashboard de métricas financieras con frontend en React + TypeScript y backend en FastAPI._
 
+## Entregables del proyecto
+
+El contexto del repositorio se construyó fase por fase con un coding agent. Cada afirmación se comprobó contra el código.
+
+| Fase | Entregable | Commits |
+|---|---|---|
+| 1 · Comprender el handover | [`verification.md`](./verification.md) (Fase 1): el resumen de la IA, comprobado afirmación por afirmación (✅/❌), con sus correcciones | `cb29403` |
+| 2 · Hallazgos de ingeniería | [`engineering-findings.md`](./engineering-findings.md): 25 hallazgos con evidencia y 22 reglas propuestas, con trazabilidad | `add3d9f` |
+| 3 · Reglas implementadas y probadas | [`.agents/rules/`](./.agents/rules/) (empieza por [`using-rules.md`](./.agents/rules/using-rules.md)). Validación con tareas reales en [`verification.md`](./verification.md) (Fase 3) | `537f82b`, `94b6fd1`, `f0dfdc5`, `a99e418`, `da0fccc`, `1b46bed` |
+| 4 · Memoria del proyecto | [`memory-bank/`](./memory-bank/): descripción del producto, stack tecnológico, arquitectura y estado actual | `290c865` |
+
+El rastro de verificación de cada fase (afirmación incorrecta → corrección) está en [`verification.md`](./verification.md) y en el cuerpo de los mensajes de commit.
+
 ## Pasos recomendados
 
 1. Haz un fork de este repositorio a tu cuenta.

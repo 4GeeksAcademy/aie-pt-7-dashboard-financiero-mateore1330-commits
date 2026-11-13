@@ -17,6 +17,19 @@ _Estas instrucciones están [disponibles en español](./README.es.md)._
 
 _Financial metrics dashboard with a React + TypeScript frontend and a FastAPI backend._
 
+## Project deliverables
+
+The repository context was built phase by phase with a coding agent. Every claim was checked against the code. The deliverables are written in Spanish.
+
+| Phase | Deliverable | Commits |
+|---|---|---|
+| 1 · Understand the handover | [`verification.md`](./verification.md) (Phase 1): AI summary checked claim by claim (✅/❌), with corrections | `cb29403` |
+| 2 · Engineering findings | [`engineering-findings.md`](./engineering-findings.md): 25 evidence-backed findings and 22 proposed rules, with traceability | `add3d9f` |
+| 3 · Rules implemented and tested | [`.agents/rules/`](./.agents/rules/) (start with [`using-rules.md`](./.agents/rules/using-rules.md)). Validation with real tasks in [`verification.md`](./verification.md) (Phase 3) | `537f82b`, `94b6fd1`, `f0dfdc5`, `a99e418`, `da0fccc`, `1b46bed` |
+| 4 · Project memory | [`memory-bank/`](./memory-bank/): product overview, tech stack, architecture and current state | `290c865` |
+
+The verification trail for every phase (wrong claim → correction) is in [`verification.md`](./verification.md) and in the commit message bodies.
+
 ## Recommended steps
 
 1. Fork this repository to your account.
