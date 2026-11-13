@@ -38,16 +38,58 @@ _Dashboard de métricas financieras con frontend en React + TypeScript y backend
 
 ## Cómo ejecutar en local
 
+### Requisitos previos
+
+Docker tiene que estar instalado **y en ejecución** antes de empezar. En macOS/Windows, abre Docker Desktop (`open -a Docker` en macOS) y espera a que muestre _Engine running_. Puedes comprobarlo con:
+
+```bash
+docker info
+```
+
+Si este comando falla, `docker compose up` también fallará.
+
+### Arrancar los servicios
+
+Desde la raíz del repositorio:
+
 ```bash
 docker compose up --build
 ```
 
+Comprueba que los dos contenedores están levantados:
+
+```bash
+docker compose ps   # backend y frontend deben aparecer como "Up"
+```
+
 El frontend usa por defecto el proxy de Vite para `/api`, así que no necesitas variables de entorno extra ni en desarrollo local ni en Codespaces.
 Si necesitas apuntar a otro backend, copia `frontend/.env.example` como `.env` y define `VITE_API_BASE_URL`.
+Si ejecutas `npm run dev` fuera de Docker, tienes que definir `VITE_API_BASE_URL=http://localhost:8000`: el proxy apunta a `http://backend:8000`, un nombre de host que solo existe dentro de la red de Docker.
 
-- Frontend: http://localhost:5173
-- Backend: http://localhost:8000
-- Documentación API: http://localhost:8000/docs
+### Comprobar que todo funciona
+
+| Qué | URL | Respuesta esperada |
+|---|---|---|
+| Health del backend | http://localhost:8000/health | JSON `{"status":"ok"}` |
+| Documentación de la API | http://localhost:8000/docs | Swagger UI |
+| API a través del proxy de Vite (como la usa el navegador) | http://localhost:5173/api/metrics | Array JSON de movimientos |
+| Dashboard | http://localhost:5173 | La página del dashboard |
+
+```bash
+curl http://localhost:8000/health        # {"status":"ok"}
+curl http://localhost:5173/api/metrics   # array JSON
+```
+
+> [!WARNING]
+> Comprueba el health del backend en el puerto **8000**, no en el 5173. El proxy de Vite solo reenvía `/api/*`, así que `http://localhost:5173/health` devuelve el HTML del frontend con código **200** aunque el backend esté caído. Un 200 por sí solo no significa que el backend esté sano: comprueba que el cuerpo sea `{"status":"ok"}`.
+
+### Solución de problemas
+
+| Síntoma | Causa | Solución |
+|---|---|---|
+| `Cannot connect to the Docker daemon ... Is the docker daemon running?` | Docker Desktop está instalado pero no arrancado | Abre Docker Desktop, espera a que muestre _Engine running_ y vuelve a lanzar `docker compose up --build` |
+| `localhost:5173/health` devuelve HTML | Esa ruta no pasa por el proxy hacia el backend | Usa `http://localhost:8000/health` |
+| El dashboard carga pero no muestra datos | El backend no está en marcha o el proxy no llega a él | Ejecuta `docker compose ps` y `docker compose logs backend` |
 
 ---
 

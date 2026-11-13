@@ -38,16 +38,58 @@ _Financial metrics dashboard with a React + TypeScript frontend and a FastAPI ba
 
 ## How to run locally
 
+### Prerequisites
+
+Docker must be installed **and running** before you start. On macOS/Windows, open Docker Desktop (`open -a Docker` on macOS) and wait until it shows _Engine running_. You can check it with:
+
+```bash
+docker info
+```
+
+If this command fails, `docker compose up` will fail too.
+
+### Start the services
+
+From the repository root:
+
 ```bash
 docker compose up --build
 ```
 
+Check that both containers are up:
+
+```bash
+docker compose ps   # backend and frontend must appear as "Up"
+```
+
 The frontend uses the Vite proxy for `/api` by default, so no extra environment variables are required in local development or Codespaces.
 If you need to target a different backend origin, copy `frontend/.env.example` to `.env` and set `VITE_API_BASE_URL`.
+If you run `npm run dev` outside Docker, you must set `VITE_API_BASE_URL=http://localhost:8000`: the proxy targets `http://backend:8000`, a hostname that only exists inside the Docker network.
 
-- Frontend: http://localhost:5173
-- Backend: http://localhost:8000
-- API documentation: http://localhost:8000/docs
+### Check that everything works
+
+| What | URL | Expected response |
+|---|---|---|
+| Backend health | http://localhost:8000/health | JSON `{"status":"ok"}` |
+| API documentation | http://localhost:8000/docs | Swagger UI |
+| API through the Vite proxy (as the browser uses it) | http://localhost:5173/api/metrics | JSON array of movements |
+| Dashboard | http://localhost:5173 | The dashboard page |
+
+```bash
+curl http://localhost:8000/health        # {"status":"ok"}
+curl http://localhost:5173/api/metrics   # JSON array
+```
+
+> [!WARNING]
+> Check the backend health on port **8000**, not 5173. The Vite proxy only forwards `/api/*`, so `http://localhost:5173/health` returns the frontend HTML with status **200** even when the backend is down. A 200 response alone does not mean the backend is healthy: check that the body is `{"status":"ok"}`.
+
+### Troubleshooting
+
+| Symptom | Cause | Fix |
+|---|---|---|
+| `Cannot connect to the Docker daemon ... Is the docker daemon running?` | Docker Desktop is installed but not started | Open Docker Desktop, wait for _Engine running_ and run `docker compose up --build` again |
+| `localhost:5173/health` returns HTML | That route does not go through the proxy to the backend | Use `http://localhost:8000/health` |
+| The dashboard loads but shows no data | The backend is not running or the proxy cannot reach it | Run `docker compose ps` and `docker compose logs backend` |
 
 ---
 
