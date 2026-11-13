@@ -1,5 +1,6 @@
-from datetime import date
+from datetime import date, timedelta
 
+import pytest
 from fastapi.testclient import TestClient
 
 from app.main import app
@@ -154,10 +155,27 @@ def test_top_categories_returns_limited_sorted_categories():
     assert all(item["operation_type"] == "outcome" for item in payload)
 
 
+def _expected_net(movements, start_date, end_date):
+    in_range = [m for m in movements if start_date <= m.create_date <= end_date]
+    assert in_range, f"no mock movements between {start_date} and {end_date}"
+    income = sum(m.amount for m in in_range if m.operation_type == "income")
+    outcome = sum(m.amount for m in in_range if m.operation_type == "outcome")
+    return round(income - outcome, 2)
+
+
 def test_metrics_comparison_returns_delta_fields():
+    movements = generate_mock_movements(seed=42)
+    end_date = movements[-1].create_date
+    start_date = end_date - timedelta(days=29)
+    previous_end = start_date - timedelta(days=1)
+    previous_start = previous_end - timedelta(days=29)
+    expected_current = _expected_net(movements, start_date, end_date)
+    expected_previous = _expected_net(movements, previous_start, previous_end)
+    assert expected_previous != 0
+
     response = client.get(
         "/api/metrics/comparison",
-        params={"start_date": "2025-03-01", "end_date": "2025-03-31"},
+        params={"start_date": start_date.isoformat(), "end_date": end_date.isoformat()},
     )
 
     assert response.status_code == 200
@@ -168,6 +186,13 @@ def test_metrics_comparison_returns_delta_fields():
         "delta_abs",
         "delta_pct",
     }
+    assert payload["current_period"] == pytest.approx(expected_current, abs=0.01)
+    assert payload["previous_period"] == pytest.approx(expected_previous, abs=0.01)
+    expected_delta_abs = round(expected_current - expected_previous, 2)
+    assert payload["delta_abs"] == pytest.approx(expected_delta_abs, abs=0.01)
+    assert payload["delta_pct"] == pytest.approx(
+        expected_delta_abs / abs(expected_previous) * 100, abs=0.01
+    )
 
 
 def test_metrics_alerts_returns_anomaly_candidates():
