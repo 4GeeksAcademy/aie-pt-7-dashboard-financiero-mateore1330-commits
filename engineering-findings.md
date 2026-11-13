@@ -39,7 +39,7 @@ Leyenda: 🟢 convención (hay que respetarla) · 🔴 riesgo (hay que evitarlo 
 | N3 | Estilo mezclado y sin formateador: comillas dobles con `;` en `App.tsx` y `lib/financial-utils*.ts`, y comillas simples sin `;` en `components/`, `main.tsx` y `mock-data.ts` | 🔴 | Recuento de imports por archivo. No existe Prettier, `.editorconfig` ni configuración equivalente | Podría reformatear archivos enteros y generar diffs enormes y difíciles de revisar |
 | N4 | Los componentes que muestran datos reciben `loading?` y muestran un `Skeleton` | 🟢 | [`kpi-card.tsx`](frontend/src/components/dashboard/kpi-card.tsx), [`income-outcome-chart.tsx`](frontend/src/components/dashboard/income-outcome-chart.tsx), [`profit-percent-chart.tsx`](frontend/src/components/dashboard/profit-percent-chart.tsx) | Un componente nuevo sin estado de carga rompe la coherencia visual |
 | N5 | Los colores salen de variables CSS del tema, definidas para el modo claro y el oscuro | 🟢 | [`index.css:25-39`](frontend/src/index.css#L25-L39) (`:root`) y `.dark`. `variantStyles` en `kpi-card.tsx` | Tenderá a escribir colores fijos (`text-green-500`, hex) |
-| N6 | La interfaz está en inglés, salvo un mensaje de error en español | 🔴 | [`index.html:2`](frontend/index.html#L2) `lang="en"`, y todos los textos de los componentes. La excepción está en [`App.tsx:36`](frontend/src/App.tsx#L36) | Sin regla, cada cambio podría usar un idioma distinto |
+| N6 | La interfaz está en inglés, salvo un mensaje de error en español | 🔴 | [`index.html:2`](frontend/index.html#L2) `lang="en"`, y todos los textos de los componentes. La excepción está en [`App.tsx:37`](frontend/src/App.tsx#L37) | Sin regla, cada cambio podría usar un idioma distinto |
 
 ### 3. Contratos y datos
 
@@ -170,6 +170,8 @@ Cada regla indica el archivo de `.agents/rules/` donde se implementará en la Fa
 | G2 | GD-02 |
 
 Los 22 hallazgos tienen al menos una regla, y las 22 reglas citan al menos un hallazgo.
+
+**Reglas añadidas en la Fase 3:** [`using-rules.md`](.agents/rules/using-rules.md) incluye UR-01 (qué archivo de reglas leer según lo que se edite) y UR-02 (toda regla debe apoyarse en evidencia). No proceden de un hallazgo de este documento, sino de [`AGENTS.md`](AGENTS.md), que obliga a revisar `./.agents/rules` pero no dice qué archivo aplica a cada tarea, y de las instrucciones del proyecto, que exigen que cada regla mapee a un hecho del repositorio. UR-01 se apoya además en D1, porque el contrato de datos obliga a leer las reglas de backend y frontend a la vez.
 
 ## Pendiente para fases siguientes
 

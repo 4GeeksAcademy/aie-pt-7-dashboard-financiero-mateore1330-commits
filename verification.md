@@ -110,3 +110,24 @@ Estos hallazgos no forman parte del resumen, pero se detectaron durante la verif
 | Recuento de estilos de comillas y `;` en los imports de `frontend/src` | Dos estilos distintos según la carpeta (N3) |
 | Búsqueda de configuración de formateador, linter de Python o CI | No existe ninguna (N3, T4) |
 | `git log` | Conventional Commits solo en los commits recientes (G1) |
+
+---
+
+## Fase 3: Implementar y probar reglas
+
+**Fecha:** 2026-11-13
+
+### Correcciones (afirmación incorrecta → corrección)
+
+- **El índice de reglas creado como `.agents/rules/README.md`** → No seguía la estructura que define [`README.es.md`](README.es.md) (`/rules/<nombre-regla>.md`, donde cada archivo es una regla). Tampoco tenía nombre, alcance ni justificación, que es lo que pide la Fase 3 para cada archivo de reglas. Detectado en la revisión humana. Se renombró a [`using-rules.md`](.agents/rules/using-rules.md) y se reescribió como regla (UR-01 y UR-02), con cabecera `name` / `description` / `scope` y el mismo formato que el resto.
+- **TE-04 (Fase 2): "Ejecuta los tests con `TZ=America/New_York` fuera del contenedor"** → No era aplicable. El `frontend/node_modules` del host está vacío (el compose lo monta como volumen anónimo), así que Vitest no se puede ejecutar en el host. Se comprobó una alternativa dentro del contenedor: con `docker compose exec -u root frontend apk add --no-cache tzdata`, `TZ=America/New_York` pasa a aplicarse (`getTimezoneOffset()` = 300) y `npm test` se ejecuta en esa zona horaria. TE-04 se redactó con ese método.
+- **Referencias de línea en el hallazgo N6 y en las reglas** → `App.tsx:36` no es el mensaje en español (es `setError(`): el mensaje está en `App.tsx:37`. `App.tsx:45` no es la clase `dark` (es `return (`): está en `App.tsx:46`. Se corrigieron en `engineering-findings.md` y `frontend.md`. También se corrigió la comprobación de FE-10, que decía que `grep "mock-data"` devolvía el propio archivo, cuando no devuelve nada.
+
+### Comprobaciones ejecutadas al redactar las reglas
+
+| Comprobación | Resultado |
+|---|---|
+| `docker compose exec frontend npm run build` (citado en TE-01, que no se había ejecutado antes) | ✅ Build correcto. Muestra un aviso de tamaño de chunk que ya existía |
+| Comandos de "Cómo comprobarlo" de FE-01, FE-02, FE-03, FE-06 y FE-10 sobre el código actual | ✅ Dan el resultado que indica cada regla |
+| Comando de comprobación de EN-02 | ❌ Lista los 6 paquetes sin versión. Es lo esperado: la tarea de validación T-C debe corregirlo |
+| Líneas citadas en las reglas (`kpi-card.tsx:37`, `income-outcome-chart.tsx:50` y `:113`, `profit-percent-chart.tsx:51`, `index.html:2`, `Dockerfile:6`, `test_routes.py:160`) | ✅ Contienen lo que se cita |
