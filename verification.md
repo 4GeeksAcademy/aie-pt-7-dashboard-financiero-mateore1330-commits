@@ -244,3 +244,48 @@ El auditor también señaló **información que faltaba**, y se añadió:
 - Los datos se regeneran en cada petición.
 - Las claves de periodo de `/summary`.
 - El valor por defecto de `/categories/top`.
+
+---
+
+# Proyecto de especificaciones (rama `feat/frontend-specs`)
+
+## Specs · Fase 1: Explorar la API
+
+Entregable: [`frontend/specs/api-exploration.md`](frontend/specs/api-exploration.md). Plan: [`frontend/specs/plans/phase-1-api-exploration.md`](frontend/specs/plans/phase-1-api-exploration.md).
+
+### Fuentes de evidencia
+
+- Contrato OpenAPI 3.1.0 en vivo (`http://localhost:8000/docs` y `/openapi.json`) sobre el commit `8022d3e`.
+- Unas 40 peticiones `curl` a la API en marcha (casos límite de fechas, `threshold`, `limit`, `business_type` y errores 422).
+- Recálculo de `baseline_average` con los datos de `/api/metrics/summary`.
+- Lectura de `backend/app/routes.py` y de `frontend/src`.
+
+### Suposiciones del brief que resultaron incorrectas (❌)
+
+| Suposición | Evidencia | Cómo lo resuelve la spec |
+|---|---|---|
+| Existen `AlertsResponse` y `TopCategoriesResponse` como objetos de respuesta | `/alerts` y `/categories/top` devuelven **listas sin envolver** | Serán alias de `AlertEntry[]` y `CategoryEntry[]` |
+| La media de la tabla de anomalías es la de los 3 períodos anteriores | `baseline_average` es la media de **todos** los períodos anteriores del rango (p. ej. `2026-03`: 55334.29 frente a 59977.58 con 3 períodos) | Se usa `/alerts` tal cual y se documenta el desajuste como pregunta abierta para el PM (decisión del usuario) |
+| El umbral va de 0.01 a 1.0 | La API acepta cualquier valor `≥ 0`, sin máximo | El frontend aplica el rango del PM |
+| `increase_ratio` es un "incremento porcentual" | Es un ratio: `1.4968` = +149,68 % | Se muestra multiplicado por 100 |
+| Las categorías de cada grupo salen de `facets` | `facets` no tiene parámetros y no separa por B2B/B2C | Las categorías de cada panel salen de `/categories/top` |
+| Habrá un "top 5" de ingresos | Los ingresos solo usan `sales` y `others`: como mucho 2 filas | Se muestran las filas que lleguen |
+| Un input de fecha vacío equivale a "sin filtro" | `start_date=` da **422** | El parámetro vacío se omite |
+| Una fecha de inicio posterior a la de fin da error | La API devuelve `[]` con 200 | El frontend lo valida antes de pedir |
+| Hay un router para la "nueva página" | No hay ninguna dependencia de router | Pestañas con estado de React (decisión del usuario) |
+
+### Revisión independiente (agente sin contexto)
+
+Comprobó unas 62 afirmaciones correctas y encontró 9 puntos. Se verificaron uno a uno (con `curl` o leyendo el código) antes de corregirlos:
+
+| Afirmación | Realidad | Tipo | Corrección |
+|---|---|---|---|
+| Comparación estricta en `routes.py:229` | Está en `routes.py:230` (la 229 calcula el ratio) | ❌ Incorrecta | Referencia corregida |
+| Orden y redondeo del top en `routes.py:203` | `sorted` en `:200`, `round` en `:205` | Imprecisa | `routes.py:200-205` |
+| `HTTPValidationError { detail: ... }` | `detail` no es `required` en el contrato | Imprecisa | `detail?`, con la nota de que siempre llega |
+| "Solo acepta `YYYY-MM-DD`" | `2026-03-01T00:00:00` → 200; `T10:00:00` → 422 `date_from_datetime_inexact` | Imprecisa | Dos filas nuevas en la tabla de fechas |
+| "Un rango de un solo mes da siempre `[]`" | Solo dentro de un mes natural. `2026-03-15` → `2026-04-15` da una alerta comparando dos medios meses | Imprecisa | Matizado, y aviso de meses parciales en F2-6 |
+| (Faltaba) Parámetros desconocidos | `/api/metrics?business_type=B2B` → 200 con los 360 movimientos | Omisión | Subsección nueva |
+| (Faltaba) Parámetros repetidos | Gana el último valor, sin error | Omisión | Subsección nueva |
+| (Faltaba) Detalles de la media | No se evalúa si es ≤ 0 (`:228`), usa importes redondeados (`:183`) y cambia con `business_type` | Omisión | Añadidos |
+| (Faltaba) `threshold=0` | Es válido en la API (`ge=0`) | Omisión | F2-4 aclara que el mínimo 0.01 es solo del frontend |
