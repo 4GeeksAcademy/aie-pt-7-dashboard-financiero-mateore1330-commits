@@ -118,7 +118,7 @@ declare function sumTotalAmount(entries: TopCategoriesResponse): number
 declare function withShares(entries: TopCategoriesResponse): CategoryShare[]
 ```
 
-Tests mínimos de `dashboard-utils.test.ts` (sin fechas fijas del dataset, regla TE-02; las fechas de los tests son literales inventados):
+Tests mínimos de `dashboard-utils.test.ts` (sin fechas fijas del dataset, regla TE-03; las fechas de los tests son literales inventados):
 
 | Función | Casos |
 |---|---|
@@ -266,6 +266,8 @@ interface DateRangeFilterBarProps {
 - Valor `'YYYY-MM-DD'` → `onChange({ ...value, start_date: valor })` (o `end_date`). El input ya entrega ese formato (F1-1).
 - Valor `''` y `event.target.validity.badInput === false` → el usuario borró la fecha → ese campo pasa a `undefined`.
 - Valor `''` y `event.target.validity.badInput === true` → la fecha está a medio escribir (algunos navegadores emiten `''` mientras se edita un segmento) → **no se llama** a `onChange`. Así no se lanza una petición del dataset completo mientras el usuario escribe.
+
+Una fecha completa escrita a mano fuera de los `min`/`max` (`validity.rangeOverflow` o `rangeUnderflow`) **sí** se pasa a `onChange`: los atributos solo limitan el selector. Lo único que no se envía es una fecha a medio escribir (`badInput`) o un rango con inicio > fin.
 
 Si `isValid` es `false`, los dos inputs llevan `aria-invalid="true"` y `aria-describedby="date-range-error"`.
 
@@ -447,7 +449,7 @@ Dos peticiones independientes a `GET /api/metrics/categories/top`, una por líne
 - `facets` cargado → `facets.data.business_types` (hoy `['B2B', 'B2C']`, en orden alfabético).
 - `facets` cargando o con error → `['B2B', 'B2C']`, los dos valores fijos de `BusinessType` en el contrato.
 
-`AppState.topCategories` tiene siempre las dos claves; solo se muestran las de `businessTypes`.
+`AppState.topCategories` tiene siempre las dos claves; solo se muestran las de `businessTypes`. Hoy `facets` siempre devuelve las dos líneas (describe el dataset completo). Si devolviera una sola, habría un solo panel y una sola barra, y la gráfica se pinta con normalidad.
 
 ### 3.3 `BusinessComparisonView` (nuevo)
 

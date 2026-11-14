@@ -1,7 +1,7 @@
 ---
 name: architecture
 description: Cómo fluyen los datos, dónde vive cada responsabilidad y qué partes están acopladas
-last_verified: 2026-11-13 (sobre el commit 1b46bed y los cambios de la Fase 4)
+last_verified: 2026-11-14 (sobre el commit 2c92ea5 de la rama feat/frontend-specs y los cambios de su Fase 4)
 ---
 
 # Arquitectura
@@ -54,6 +54,8 @@ Dentro de `routes.py`:
 | `lib/financial-utils.ts` | Funciones puras: `computeKPIs`, `computeMonthlyData`, `formatCurrency` (USD) y `formatPercent` |
 | `lib/mock-data.ts` | Datos de 2024 que **no importa nadie** (código heredado) |
 | `index.css` | Tema: variables CSS para `:root` y `.dark`, mapeadas a Tailwind en `@theme inline` |
+
+Fuera de `src/`, [`frontend/specs/`](../frontend/specs/README.md) contiene las **especificaciones** de tres funcionalidades todavía no implementadas (tipos, componentes y contrato de datos). La app **no** importa esos archivos: `tsconfig.app.json` solo incluye `src`, y la carpeta tiene su propio `tsconfig.json` estricto.
 
 ## Acoplamientos que hay que conocer
 

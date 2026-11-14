@@ -30,6 +30,17 @@ The repository context was built phase by phase with a coding agent. Every claim
 
 The verification trail for every phase (wrong claim → correction) is in [`verification.md`](./verification.md) and in the commit message bodies.
 
+### Spec-driven development (branch `feat/frontend-specs`)
+
+Three new features (date range filter, anomaly alerts table, B2B vs B2C view) specified before implementation, in [`frontend/specs/`](./frontend/specs/). Start with its [`README.md`](./frontend/specs/README.md), the data contract. Each phase's plan is in [`frontend/specs/plans/`](./frontend/specs/plans/).
+
+| Phase | Deliverable | Commits |
+|---|---|---|
+| 1 · Explore the API | [`api-exploration.md`](./frontend/specs/api-exploration.md): endpoints, real edge cases and 31 mismatches between the PM brief and the API | `65d5b3e` |
+| 2 · TypeScript types | [`api-types.ts`](./frontend/specs/api-types.ts), [`param-types.ts`](./frontend/specs/param-types.ts): verified against the live OpenAPI (28/28 properties), strict `tsconfig.json` | `0cf4626` |
+| 3 · Component specs | [`components.md`](./frontend/specs/components.md): components, typed props and rendering states | `2c92ea5` |
+| 4 · Data contract | [`README.md`](./frontend/specs/README.md): endpoints, types, parameter constraints and edge cases per feature | `docs(specs): add data contract readme…` |
+
 ## Recommended steps
 
 1. Fork this repository to your account.

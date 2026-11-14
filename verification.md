@@ -410,3 +410,39 @@ Un agente sin contexto leyó solo la spec y los tipos como si tuviera que progra
 | Menores: cabecera con rango al revés, `aria-invalid` en las fechas, `tabpanel`/`aria-controls`, `Cell`/leyenda/tooltip de la gráfica, mapa de categorías, estilo FE-04 de los ejemplos, dos cajas de error a la vez | Ambigüedades | Todas resueltas en la spec |
 
 Después de corregir: los 9 bloques compilan en modo estricto y los 31 desajustes de la Fase 1 siguen trazados.
+
+## Specs · Fase 4: Contrato de datos
+
+Entregable: [`frontend/specs/README.md`](frontend/specs/README.md). Plan: [`frontend/specs/plans/phase-4-data-contract.md`](frontend/specs/plans/phase-4-data-contract.md).
+
+### Decisión del usuario
+
+- Actualizar en este mismo commit el `memory-bank` (regla UR-03) y la tabla de entregables de `README.md` y `README.es.md` (regla GD-02). En el `memory-bank` solo se registra lo que existe: las specs como archivos y que las funcionalidades **no** están implementadas (UR-03 prohíbe describir como existente lo que no está en el código).
+
+### Comprobaciones
+
+| Comprobación | Resultado |
+|---|---|
+| `docker compose exec -T -w /app/specs frontend npx tsc --noEmit` (el `npx tsc --noEmit` del ejercicio, dentro del contenedor) | ✅ exit 0 |
+| `npm run lint` | ✅ exit 0 |
+| Los 3 bloques TypeScript del README, compilados en modo estricto contra los tipos | ✅ exit 0; un `AlertsRequest` sin `threshold` añadido a propósito sí falla |
+| Tipos contra el OpenAPI en vivo (script de la Fase 2) | ✅ 28/28 |
+| Rutas, parámetros y valores de ejemplo del README, con `curl` | ✅ Unas 35 peticiones al redactar y unos 65 valores en la revisión independiente: todos coinciden |
+| Enlaces relativos y anclas de `README.md` y `components.md` | ✅ 26 enlaces, 0 rotos |
+| Archivos cambiados en la rama respecto a `main` | ✅ Solo `frontend/specs/`, `verification.md`, `memory-bank/` y los dos README: ni componentes, ni `fetch`, ni backend |
+| Rúbrica | ✅ Las tres funcionalidades con endpoints, tipos de petición y respuesta, valores válidos y restricciones, y 11, 11 y 13 casos límite con lo que muestra la interfaz |
+
+### Revisión con una sesión nueva
+
+Un agente sin contexto partió **solo** del README, siguiendo únicamente los enlaces que el README le indicaba. Verificó unos 65 valores con `curl`, todos correctos. Su veredicto: una sesión nueva aún tendría que hacer 2 o 3 preguntas. Se verificaron sus puntos antes de corregirlos:
+
+| Afirmación | Realidad | Tipo | Corrección |
+|---|---|---|---|
+| "No escribas fechas fijas (reglas FE-10 y TE-02)" | TE-02 es el estilo de los tests del backend; la regla de las fechas fijas es **TE-03**. FE-10 trata de la etiqueta "2024" | ❌ Incorrecta | TE-03 en el README y en `components.md`; FE-10 solo para la etiqueta |
+| README: "El input del umbral es texto" | `components.md` lo define como `<input type="number">` | ❌ Contradicción | Los dos dicen `type="number"`, cuyo valor llega como texto (`''` si no es numérico) |
+| (Pregunta) ¿Se envía una fecha escrita a mano fuera de `min`/`max`? | No estaba definido; el caso 1.8 lo necesitaba | Ambigüedad | Sí se envía: solo bloquean `badInput` e inicio > fin (README y `components.md` §1.5) |
+| (Pregunta) ¿Y si `facets.business_types` tiene un solo valor? | No estaba definido | Ambigüedad | Hoy no puede ocurrir; si ocurriera, un panel y una barra (caso 3.11) |
+| "Inicio > fin devuelve `[]`" | Solo constaba para `/api/metrics` | Incompleta | Comprobado también en `/alerts` y `/categories/top` |
+| Menores | `formatMonthYearLabel` es privada; reglas sin enlace; funciones de `lib/` sin referencia; alias de tipos que parecían importables; tests no mencionados; caso 1.3 poco claro | Claridad | Todos corregidos |
+
+Después de corregir: `tsc` exit 0 y 26 enlaces sin romper.
