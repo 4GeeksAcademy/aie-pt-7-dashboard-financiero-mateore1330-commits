@@ -362,3 +362,51 @@ No encontró errores en los nombres ni en los tipos, y confirmó unas 32 afirmac
 | Orden del top: de mayor a menor | Confirmado. Con empate se mantiene el orden de inserción | Sin impacto | Sin cambios (solo hay 2 categorías) |
 
 Después de corregir: `tsc` exit 0, `lint` exit 0 y comparación con OpenAPI 28/28.
+
+## Specs · Fase 3: Especificación de componentes
+
+Entregable: [`frontend/specs/components.md`](frontend/specs/components.md). Plan: [`frontend/specs/plans/phase-3-component-specs.md`](frontend/specs/plans/phase-3-component-specs.md).
+
+### Decisiones del usuario
+
+- **Un único filtro de fechas compartido** por las dos pestañas (el brief no aclaraba si la funcionalidad 3 tenía su propio rango).
+- Se aplican las de la Fase 1: pestañas sin router (F3-1), cabecera con el rango aplicado (F1-9) y `/alerts` tal cual, con el desajuste de la media documentado (F2-1).
+
+### Suposiciones que resultaron incorrectas (❌)
+
+| Suposición | Evidencia | Corrección |
+|---|---|---|
+| Con el dataset actual, un umbral alto deja vacía la tabla de anomalías | El máximo del input es `1` (100 %) y `2025-12` sube un +149.7 %: **sin filtro, ningún umbral válido da `[]`** | Ejemplos de estado vacío con rangos reales comprobados con `curl` (`2026-03-01`→`2026-03-31`; `2026-07-01`→`2026-10-28` con `0.4`) |
+| Ejemplo de importe `$88,086` para `2026-03` | La API devuelve `outcome_total` 88076.9 → `$88,077` | Corregido |
+| Todos los desajustes de la Fase 1 estaban resueltos | **F2-8** (comparación estricta `>`) no aparecía en la spec | Nota añadida en §2.3 y tabla de trazabilidad completa (§5, 31 desajustes) |
+
+### Comprobaciones
+
+- Los 9 bloques TypeScript de `components.md` se extraen y se compilan en modo estricto junto a `api-types.ts` y `param-types.ts` (en una carpeta temporal del contenedor, sin guardarlos en el repo): exit 0. Un error introducido a propósito sí se detecta (exit 2).
+- Los números de los ejemplos (alertas, paneles B2B/B2C y sus porcentajes, rangos vacíos) se comprobaron con la API en marcha el 2026-11-14.
+- Rúbrica: 7 componentes con nombre, props y tipos; tablas de estados en cada uno; estado vacío explícito de la tabla de anomalías; comportamiento con un solo input de fecha; estado vacío de cada panel B2B/B2C.
+
+### Revisión independiente (agente en el papel de implementador)
+
+Un agente sin contexto leyó solo la spec y los tipos como si tuviera que programarlos. Su veredicto inicial: **no podía construirlo sin preguntar**. Se verificaron sus puntos contra las reglas de `.agents/rules/` y el código antes de corregirlos. Uno resultó falso (`index.css:25-32` era correcto).
+
+| Problema | Tipo | Corrección |
+|---|---|---|
+| No estaba claro qué peticiones se lanzan en cada pestaña, si hay caché ni qué pasa con una petición cancelada al cambiar de pestaña | Bloqueante | Tabla de efectos en §1.3: dependencias, pestaña, `AbortController` en el *cleanup* y sin caché |
+| Qué reciben `KPIRow` y las gráficas si `/api/metrics` falla, y dónde va la caja de error | Bloqueante | Tabla de estado → props en §1.4 |
+| Los tipos de `specs/` están fuera de `include: ["src"]`; los imports relativos incumplen FE-03 | Bloqueante | §0.3: los tipos se copian a `src/lib/` y se importan con `@/lib/...` |
+| Validaciones, formatos y totales sin función ni test (regla FE-08) | Bloqueante | §0.5: 9 funciones puras con sus casos de test; los componentes solo reciben datos calculados |
+| "`<input type="date">` solo emite fechas completas" | ❌ Incorrecta | Algunos navegadores emiten `''` mientras se edita: se distingue con `validity.badInput` para no pedir el dataset completo a mitad de escribir |
+| Disposición de la barra de fechas sin definir | Bloqueante | §1.5, disposición con `flex-wrap` |
+| "No hace falta borrar" el valor por defecto de la cabecera | ❌ Contradice FE-10 | Se cambian los dos sitios de la etiqueta |
+| `{appliedThreshold × 100}` en los textos | ❌ Error de coma flotante (`0.07*100` = `7.000000000000001`) | `formatThreshold` (`formatPercent(t * 100)`) |
+| `loading: boolean` obligatorio | ❌ Contradice FE-05 | `loading?: boolean` en todas las props |
+| Tabla de estados ("sin `min`/`max`") frente a tabla de elementos | Contradicción | Tabla única: límites cruzados siempre, los del dataset solo si `facets` cargó |
+| Mensaje de error de la gráfica incorrecto si fallan los dos paneles; precedencia de estados sin definir | Contradicción | Texto nuevo y estados evaluados en orden |
+| `businessTypes` y `Record<BusinessType, …>` podían no coincidir | Contradicción | Una sola lista `businessTypes` de la que salen paneles y barras |
+| `income-outcome-chart.tsx:78-110` | ❌ Incorrecta | `:78-119` |
+| `DashboardTab` compartido frente a "Props no exportadas" | Contradicción | Los tipos compartidos van a `src/lib/dashboard-types.ts` |
+| Props del filtro que permitían combinaciones imposibles | Contradicción | `facets: RequestState<FacetsResponse>` |
+| Menores: cabecera con rango al revés, `aria-invalid` en las fechas, `tabpanel`/`aria-controls`, `Cell`/leyenda/tooltip de la gráfica, mapa de categorías, estilo FE-04 de los ejemplos, dos cajas de error a la vez | Ambigüedades | Todas resueltas en la spec |
+
+Después de corregir: los 9 bloques compilan en modo estricto y los 31 desajustes de la Fase 1 siguen trazados.
