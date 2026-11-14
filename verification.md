@@ -289,3 +289,76 @@ Comprobó unas 62 afirmaciones correctas y encontró 9 puntos. Se verificaron un
 | (Faltaba) Parámetros repetidos | Gana el último valor, sin error | Omisión | Subsección nueva |
 | (Faltaba) Detalles de la media | No se evalúa si es ≤ 0 (`:228`), usa importes redondeados (`:183`) y cambia con `business_type` | Omisión | Añadidos |
 | (Faltaba) `threshold=0` | Es válido en la API (`ge=0`) | Omisión | F2-4 aclara que el mínimo 0.01 es solo del frontend |
+
+## Specs · Fase 2: Tipos TypeScript
+
+Entregables: [`frontend/specs/api-types.ts`](frontend/specs/api-types.ts), [`frontend/specs/param-types.ts`](frontend/specs/param-types.ts) y [`frontend/specs/tsconfig.json`](frontend/specs/tsconfig.json). Plan: [`frontend/specs/plans/phase-2-typescript-types.md`](frontend/specs/plans/phase-2-typescript-types.md).
+
+### Suposiciones que resultaron incorrectas (❌)
+
+| Suposición | Evidencia | Corrección |
+|---|---|---|
+| "`npx tsc --noEmit` en `frontend/` comprueba los tipos" | `--listFilesOnly` devuelve **0 archivos**: el `tsconfig.json` raíz tiene `"files": []` y solo delega con `-b`; además, `tsconfig.app.json` solo incluye `src` y no tiene `strict` | `frontend/specs/tsconfig.json` propio, con `strict: true`. Se comprobó que detecta un `any` implícito (TS7006) y un tipo incorrecto (TS2322) en un archivo de prueba, que después se borró |
+| "`tsc` también detecta el uso de `object`" | `object` es un tipo válido para el compilador | Comprobación aparte, buscando en el texto: 0 apariciones de `any`/`object` como tipo |
+| `TopCategoriesParams` solo necesita tipo de operación, `limit` y fechas (enunciado) | Sin `business_type`, `/categories/top` mezcla B2B y B2C (Fase 1, F3-3) | Se añade `business_type` (decisión del usuario), explicado en su JSDoc |
+
+### Comparación automática con `/openapi.json`
+
+Un script usa el compilador de TypeScript para leer los tipos y los compara con el contrato en vivo: nombre, tipo, enum, si es opcional, si admite `null` y que tenga JSDoc. El script no se guarda en el repositorio. Resultado: **28/28 propiedades coinciden**.
+
+| Tipo TS | Fuente en /docs | Propiedad | Tipo en TS | En /docs | Resultado |
+|---|---|---|---|---|---|
+| FacetsResponse | MetricsFacets | operation_types | income\|outcome[] | income\|outcome[] | ✅ |
+| FacetsResponse | MetricsFacets | business_types | B2B\|B2C[] | B2B\|B2C[] | ✅ |
+| FacetsResponse | MetricsFacets | categories | administrative\|operational\|others\|sales\|suppliers[] | administrative\|operational\|others\|sales\|suppliers[] | ✅ |
+| FacetsResponse | MetricsFacets | min_date | string | string (date) | ✅ |
+| FacetsResponse | MetricsFacets | max_date | string | string (date) | ✅ |
+| AlertEntry | MetricsAlert | period | string | string | ✅ |
+| AlertEntry | MetricsAlert | outcome_total | number | number | ✅ |
+| AlertEntry | MetricsAlert | baseline_average | number | number | ✅ |
+| AlertEntry | MetricsAlert | increase_ratio | number | number | ✅ |
+| CategoryEntry | TopCategoryItem | category | administrative\|operational\|others\|sales\|suppliers | administrative\|operational\|others\|sales\|suppliers | ✅ |
+| CategoryEntry | TopCategoryItem | operation_type | income\|outcome | income\|outcome | ✅ |
+| CategoryEntry | TopCategoryItem | total_amount | number | number | ✅ |
+| AlertsResponse | /api/metrics/alerts 200 | (raíz) | `AlertEntry[]` | array of MetricsAlert | ✅ |
+| TopCategoriesResponse | /api/metrics/categories/top 200 | (raíz) | `CategoryEntry[]` | array of TopCategoryItem | ✅ |
+| DateRangeFilter | /api/metrics | start_date | string (opt) | string [format date, opt] | ✅ |
+| DateRangeFilter | /api/metrics | end_date | string (opt) | string [format date, opt] | ✅ |
+| DateRangeFilter | /api/metrics/alerts | start_date | string (opt) | string [format date, opt] | ✅ |
+| DateRangeFilter | /api/metrics/alerts | end_date | string (opt) | string [format date, opt] | ✅ |
+| DateRangeFilter | /api/metrics/categories/top | start_date | string (opt) | string [format date, opt] | ✅ |
+| DateRangeFilter | /api/metrics/categories/top | end_date | string (opt) | string [format date, opt] | ✅ |
+| AlertsParams | /api/metrics/alerts | threshold | number | number [min 0, default 0.3, opt] | ✅ |
+| AlertsParams | /api/metrics/alerts | start_date (de DateRangeFilter) | string (opt) | string [format date, opt] | ✅ |
+| AlertsParams | /api/metrics/alerts | end_date (de DateRangeFilter) | string (opt) | string [format date, opt] | ✅ |
+| TopCategoriesParams | /api/metrics/categories/top | operation_type | income\|outcome | income\|outcome [opt] | ✅ |
+| TopCategoriesParams | /api/metrics/categories/top | limit | number | number [min 1, max 20, default 5, integer, opt] | ✅ |
+| TopCategoriesParams | /api/metrics/categories/top | business_type | B2B\|B2C | B2B\|B2C [opt] | ✅ |
+| TopCategoriesParams | /api/metrics/categories/top | start_date (de DateRangeFilter) | string (opt) | string [format date, opt] | ✅ |
+| TopCategoriesParams | /api/metrics/categories/top | end_date (de DateRangeFilter) | string (opt) | string [format date, opt] | ✅ |
+
+`opt` = opcional. En los parámetros, `/docs` los declara todos opcionales. Los tipos hacen obligatorios `threshold`, `operation_type`, `limit` y `business_type` porque el frontend siempre los envía (si se omitiera `operation_type`, la API devolvería gastos).
+
+Otras comprobaciones:
+- `docker compose exec -T -w /app/specs frontend npx tsc --noEmit` → exit 0. Revisa `api-types.ts`, `param-types.ts` y el `src/lib/financial-types.ts` importado.
+- `npm run lint` → exit 0. ESLint revisa también `specs/` (configuración `**/*.{ts,tsx}`, confirmado con `--debug`).
+
+### Revisión independiente (agente sin contexto)
+
+No encontró errores en los nombres ni en los tipos, y confirmó unas 32 afirmaciones de los JSDoc. Encontró 11 imprecisiones, que se verificaron con `curl` o leyendo el código antes de corregirlas:
+
+| Afirmación en el JSDoc | Realidad | Tipo | Corrección |
+|---|---|---|---|
+| `limit`: "los no enteros dan 422" | `5.5` → 422, pero `5.0` → 200 | Imprecisa | Matizado |
+| Fechas: un formato distinto de `YYYY-MM-DD` da 422 | También se aceptan `2026-03-01T00:00:00` y un timestamp Unix (200) | Imprecisa | "Envía solo `YYYY-MM-DD`; no confíes en la API para validar" |
+| `increase_ratio` siempre `> threshold` | Se compara **antes** de redondear (`routes.py:230`) y se redondea después (`:236`): el valor devuelto puede ser igual al umbral | Imprecisa | Explicado, y "muéstralo, no lo recalcules" |
+| `outcome_total` siempre `>= 0` | Solo hay alerta si el gasto supera la media, que es `> 0` (`routes.py:228-230`) | Imprecisa (correcta pero débil) | "Siempre `> baseline_average`" |
+| `baseline_average`: media de todos los períodos anteriores | Los períodos sin movimientos no generan fila en el resumen (`routes.py:165-187`) | Incompleta | Añadido |
+| "Las fechas fuera del dataset devuelven vacío" | Un rango que se solapa en parte devuelve la parte común (`2026-10-01` → `2027-01-31`: 30 movimientos) | Imprecisa | "Un rango que no se solapa…" |
+| `threshold` "en pasos de 0.01" | El PM no lo dice | Sin evidencia | Eliminado |
+| % sobre el total del grupo = suma del panel | Solo es el total real porque `limit` (5) ≥ 2 categorías de ingreso | Ambigua | Explicado. También que la gráfica usa esa suma y que un rango corto puede dar 1 fila o ninguna (un día sin ingresos B2B → `[]`) |
+| (Faltaba) Tipo de la respuesta de `/api/metrics` | Ya existe `FinancialMovement[]` en `src/lib/financial-types.ts` | Ambigüedad | Nota en la cabecera de `api-types.ts` |
+| `tsconfig.json`: `cd frontend/specs && npx tsc --noEmit` | En el host, `node_modules` está vacío y el comando falla | Imprecisa | Comando de Docker |
+| Orden del top: de mayor a menor | Confirmado. Con empate se mantiene el orden de inserción | Sin impacto | Sin cambios (solo hay 2 categorías) |
+
+Después de corregir: `tsc` exit 0, `lint` exit 0 y comparación con OpenAPI 28/28.
