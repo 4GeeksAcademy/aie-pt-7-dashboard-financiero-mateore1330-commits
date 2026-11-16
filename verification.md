@@ -244,3 +244,44 @@ El auditor también señaló **información que faltaba**, y se añadió:
 - Los datos se regeneran en cada petición.
 - Las claves de periodo de `/summary`.
 - El valor por defecto de `/categories/top`.
+
+---
+
+## Skills · Fase 1: Descubrir y cargar las skills
+
+**Fecha:** 2026-11-16. Plan: [`plans/phase-1-discover-skills.md`](plans/phase-1-discover-skills.md).
+
+Se instalaron `accessibility` (`addyosmani/web-quality-skills`) y `vercel-react-best-practices` (`vercel-labs/agent-skills`) en [`.agents/skills/`](.agents/skills/), y se registraron en [`skills-lock.json`](skills-lock.json). El detalle está en [`memory-bank/progress.md`](memory-bank/progress.md).
+
+### Comprobaciones ejecutadas
+
+| Comprobación | Resultado |
+|---|---|
+| Build, lint y tests antes de cambiar nada | ✅ Build OK, con 1 advertencia ya existente (JS de 584,17 kB > 500 kB) · lint limpio · 6 tests de frontend · 15 de backend |
+| Instalación de prueba en una carpeta temporal | ✅ Solo crea `.agents/skills/<skill>/` y `skills-lock.json` |
+| `diff -r` entre lo instalado y los repos de origen | ✅ Idénticos |
+| Archivos ejecutables o scripts en las skills | ✅ Ninguno: solo `.md` y `.json` |
+| Afirmación del enunciado: "la skill de Vercel cubre `next/image`, `next/font` y metadatos" | ❌ `grep` sin resultados en sus 72 archivos de reglas y en `AGENTS.md` |
+
+### Correcciones (afirmación incorrecta → corrección)
+
+- **"La palabra `metadata` no aparece en la skill de Vercel"** → Sí aparece, pero como *request metadata* en `async-cheap-condition-before-await.md:10`, que no habla de los metadatos de la página. Se detectó al releer antes de la revisión.
+
+### Revisión independiente de `progress.md`
+
+Un **agente nuevo, sin contexto**, contrastó `progress.md` con las skills instaladas, el código y `node_modules`, y volvió a ejecutar build, lint y tests. Confirmó como correctos los recuentos (70 reglas y su reparto por prefijo, los 3 archivos de `accessibility`), las referencias de línea de los landmarks y del título, el resultado de partida y `skills-lock.json`. **No encontró ninguna regla mal clasificada.**
+
+Encontró estos problemas, todos comprobados antes de corregirlos:
+
+| Afirmación | Realidad | Gravedad | Corrección |
+|---|---|---|---|
+| "Los únicos comandos que aparecen son `pnpm install` y `npx svgo`" | `accessibility/SKILL.md:413` y `:416` traen `npx lighthouse` y `npm install @axe-core/cli -g`, y el README de Vercel, 5 comandos `pnpm` | ❌ Incorrecta | Lista completa |
+| "Hoy no hay botones ni enlaces", como si no hubiera nada que usar con el teclado | Recharts 3.8.1 activa `accessibilityLayer` por defecto (`CartesianChart.js:24`), y con eso cada gráfico recibe `tabIndex=0` y `role="application"` (`RootSurface.js:44-54`). **Los dos gráficos se pueden enfocar con Tab** | Imprecisa | Fila reescrita: el teclado y el foco se comprueban en los gráficos |
+| "Falta comprobar si los iconos se anuncian" | `lucide-react` 1.8.0 ya pone `aria-hidden="true"` (`Icon.js:36`) a los iconos sin hijos ni props de accesibilidad | Imprecisa | Con la evidencia. Queda confirmarlo en el navegador |
+| "Movimiento reducido: Recharts anima los gráficos" | También `ui/skeleton.tsx:7` (`animate-pulse`) y `kpi-card.tsx:53` (`transition-colors`) | Incompleta | Añadidos |
+| "La carga y el error de `App.tsx:51`" | Esa línea es solo el error (`:51-55`). La carga son los `Skeleton` de cada componente | Imprecisa | Referencias corregidas |
+| "`App.tsx:24-27` guarda `metrics` y `monthlyData`" | Están en `:24-25`. `:26-27` son `loading` y `error` | Imprecisa | Corregido |
+| Clasificación de las 70 reglas de Vercel | Faltaban 9 reglas (`bundle-preload`, `bundle-analyzable-paths`, `rendering-usetransition-loading`, `async-defer-await`…) | Incompleta | Clasificadas: 5 posibles y 4 que no aplican |
+| Fila "Arranque": `up --build` en la tabla y `up -d` en el texto | Las imágenes ya estaban construidas, así que se usó `up -d` | Poco clara | Se indican los dos comandos |
+
+**No verificable sin conexión** por el revisor: el número de instalaciones, la versión del CLI y el `diff -r` con los repos de origen. Los comprobó el agente principal durante la instalación.
