@@ -373,3 +373,45 @@ Un **agente nuevo, sin contexto**, revisó el diff contra la skill y contra `fro
 | F4 | El trozo `chart-skeleton-*.js` tiene un nombre confuso: es código compartido | ✅ | Detalle | Se deja: es el comportamiento del bundler |
 | F5 | El *skeleton* del *fallback* se cambia por el de la gráfica, y el parpadeo se reinicia | ✅ | Detalle | Se deja: misma altura, sin salto |
 | F6 | "Financial data loaded." puede anunciarse antes de que se pinte la gráfica | ✅ En teoría | Detalle | Se deja: el código de las gráficas empieza a descargarse antes que la API |
+
+## Skills · Fase 4: Explorar el ecosistema y aplicar `seo` y `fastapi`
+
+**Fecha:** 2026-11-17. Plan: [`plans/phase-4-explore-ecosystem.md`](plans/phase-4-explore-ecosystem.md). El detalle está en [`memory-bank/progress.md`](memory-bank/progress.md) (Fase 4).
+
+### Comprobaciones ejecutadas
+
+| Comprobación | Resultado |
+|---|---|
+| `npx skills find` en 6 temas | `seo`, `testing`, `typescript`, `tailwind`, `fastapi` y `performance`, con los resultados anotados |
+| Skills instaladas = skills leídas | ✅ `diff` sin diferencias entre los `SKILL.md` leídos antes de instalar y los instalados |
+| Lighthouse SEO (Snapshot, Mobile) | 60 → **100** (informes `lighthouse-seo-antes.json` y `lighthouse-seo-despues.json`) |
+| `openapi.json` antes y después | ✅ Idéntico |
+| Validación de parámetros | ✅ 422 en `/comparison` sin fechas, `limit=99` y `category=foo` |
+| TE-01 | ✅ pytest 15 · vitest 6 · lint OK · build sin advertencias |
+
+### Correcciones (afirmación incorrecta → corrección)
+
+- **"Frontend en TypeScript estricto" (plan)** → Ningún `tsconfig` activa `strict`. Corregido en el plan antes de buscar.
+- **Primer informe `lighthouse-seo-antes.json`** → Solo traía la categoría Accesibilidad. Se repitió marcando SEO.
+- **"Con `noindex` bajará la nota SEO"** → En modo Snapshot no corre `is-crawlable`, así que la nota no baja. Solo fallaría en modo Navigation.
+- **Meta description "…monthly income, outcome, net profit and profit margin for 2024"** → Incorrecta: repetía el "2024" del bug A6 (los datos son de los 12 meses anteriores) y llamaba mensuales a los KPI, que son totales. Detectado por la revisión independiente y corregido.
+
+### Revisión independiente del diff
+
+Un **agente nuevo, sin contexto**, revisó el diff contra las dos skills y las reglas de `.agents/rules/`, y volvió a pasar pytest. Confirmó como correcto:
+- los 31 parámetros reescritos (en 7 endpoints) conservan tipo, valor por defecto y restricciones;
+- las fechas de `/comparison` siguen siendo obligatorias, y no queda ningún `Query(` antiguo ni `...`;
+- `from __future__ import annotations` es compatible con `Annotated`;
+- se cumplen BE-01 (`response_model` en todos) y BE-02;
+- no se ha desplazado ninguna referencia de línea;
+- la combinación `robots.txt` con `Allow: /` + `noindex` es correcta;
+- `skills-lock.json` es coherente.
+
+| # | Hallazgo | Comprobación | Gravedad | Decisión |
+|---|---|---|---|---|
+| R1 | La meta description dice "2024" y llama mensuales a los KPI | ✅ A6 y `kpi-row.tsx` | Debe corregirse | Texto nuevo, aprobado por el usuario |
+| R2 | El ejemplo de BE-01 sigue con `Query(default=...)` | ✅ | Debe corregirse | Ejemplo con `Annotated` y "Evita" ampliado |
+| R3 | El 100 de Lighthouse puede malinterpretarse con `noindex` | ✅ | Documentar | Anotado: modo Snapshot, `is-crawlable` fallaría a propósito |
+| R4 | `robots.txt` no cubre el backend en `:8000` ni lleva `Sitemap:` | ✅ | Detalle | Anotado, fuera de alcance |
+| R5 | El plan no recoge `robots.txt` | ✅ | Detalle | Añadido al plan |
+| R6/R7 | Falta la documentación de la fase y el memory-bank | ✅ | Paso pendiente | `progress.md`, `verification.md`, `current-state.md` y `architecture.md` actualizados |

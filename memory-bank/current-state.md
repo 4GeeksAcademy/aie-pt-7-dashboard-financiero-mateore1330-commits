@@ -1,7 +1,7 @@
 ---
 name: current-state
 description: Qué funciona hoy, carencias conocidas y siguientes prioridades técnicas
-last_verified: 2026-11-17 (sobre el commit 4cd1088 y los cambios de la Fase 3 de skills)
+last_verified: 2026-11-17 (sobre el commit 35a50a5 y los cambios de la Fase 4 de skills)
 ---
 
 # Estado actual
@@ -23,6 +23,7 @@ last_verified: 2026-11-17 (sobre el commit 4cd1088 y los cambios de la Fase 3 de
 | `npm run build` | ✅ Correcto y sin avisos (desde la Fase 3 de skills: JS inicial de 229 kB y Recharts en un trozo aparte) |
 | Agrupación mensual en `America/New_York` | ✅ 12 meses (corregido en `94b6fd1`) |
 | Accesibilidad (2026-11-17) | ✅ Lighthouse Accessibility 100 (en modo Snapshot, antes y después), más la revisión manual de la skill `accessibility`: teclado, foco con 4,6:1, gráficas con nombre y tabla de datos, y anuncios de estado. Ver [`progress.md`](progress.md) |
+| SEO (2026-11-17) | ✅ Lighthouse SEO 60 → 100 en modo Snapshot. La página lleva `noindex, nofollow` **a propósito** (panel interno), así que en modo Navigation la auditoría `is-crawlable` fallaría. Ver [`progress.md`](progress.md) |
 
 ## Historial reciente
 
@@ -41,7 +42,9 @@ last_verified: 2026-11-17 (sobre el commit 4cd1088 y los cambios de la Fase 3 de
 | `8022d3e` | **fix:** mensaje de error de la interfaz traducido al inglés (N6) |
 | `8c44273` | **chore:** skills `accessibility` y `vercel-react-best-practices` en `.agents/skills/` |
 | `4cd1088` | **fix:** accesibilidad del dashboard con la skill `accessibility` |
-| — | **fix:** gráficas con carga diferida y *skeletons* sin salto, con la skill `vercel-react-best-practices` |
+| `35a50a5` | **fix:** gráficas con carga diferida y *skeletons* sin salto, con la skill `vercel-react-best-practices` |
+| — | **feat:** meta description, `noindex` y `robots.txt`, con la skill `seo` |
+| — | **refactor:** parámetros de los endpoints con `Annotated` y sin `Query(...)`, con la skill `fastapi` |
 
 El detalle de cada verificación está en [`verification.md`](../verification.md), y el análisis de hallazgos en [`engineering-findings.md`](../engineering-findings.md).
 

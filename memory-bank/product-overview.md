@@ -1,7 +1,7 @@
 ---
 name: product-overview
 description: Qué es el producto, qué muestra, qué ofrece su API y qué no es
-last_verified: 2026-11-17 (sobre el commit 4cd1088 y los cambios de la Fase 3 de skills)
+last_verified: 2026-11-17 (sobre el commit 35a50a5 y los cambios de la Fase 4 de skills)
 ---
 
 # Descripción del producto

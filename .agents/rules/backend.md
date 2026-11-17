@@ -23,13 +23,13 @@ Aplican a `backend/app/**`: Python 3.13, FastAPI, Pydantic y uvicorn.
 **✅ Haz:**
 ```python
 @router.get("/api/metrics/categories/top", response_model=list[TopCategoryItem])
-def get_top_categories(operation_type: OperationType = Query(default="outcome"), ...):
+def get_top_categories(operation_type: Annotated[OperationType, Query()] = "outcome", ...):
     movements = generate_mock_movements(seed=42)
     filtered = filter_movements(movements, start_date, end_date, category=None, operation_type=operation_type)
     return build_top_categories(filtered, operation_type, limit)
 ```
 
-**❌ Evita:** parámetros `str` sin validar (`category: str`), devolver `dict` sin `response_model`, repetir `[m for m in movements if m.create_date >= start_date]` en el endpoint, o crear `services/` y `models/` sin que se pida.
+**❌ Evita:** parámetros `str` sin validar (`category: str`), declarar parámetros con `= Query(default=...)` o `Query(...)` en lugar de `Annotated[T, Query()] = valor` (skill [`fastapi`](../skills/fastapi/SKILL.md): *Use `Annotated`* y *Do not use Ellipsis*), devolver `dict` sin `response_model`, repetir `[m for m in movements if m.create_date >= start_date]` en el endpoint, o crear `services/` y `models/` sin que se pida.
 
 **Cómo comprobarlo:** el endpoint aparece en `localhost:8000/docs` con su esquema de respuesta, y un valor no permitido devuelve 422.
 

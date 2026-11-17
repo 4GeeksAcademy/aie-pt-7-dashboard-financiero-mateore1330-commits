@@ -1,7 +1,7 @@
 ---
 name: architecture
 description: Cómo fluyen los datos, dónde vive cada responsabilidad y qué partes están acopladas
-last_verified: 2026-11-17 (sobre el commit 4cd1088 y los cambios de la Fase 3 de skills)
+last_verified: 2026-11-17 (sobre el commit 35a50a5 y los cambios de la Fase 4 de skills)
 ---
 
 # Arquitectura
@@ -40,6 +40,7 @@ App.tsx ◀───────────── JSON: FinancialMovement[] ◀
 Dentro de `routes.py`:
 - **Helpers puros:** `filter_movements`, `filter_movements_by_date`, `summarize_movements`, `build_top_categories`, `calculate_net_value`, `detect_outcome_alerts`, `build_metrics_facets` y `ensure_chronological_order`.
 - **Filtro por `business_type`:** está escrito en línea en 6 endpoints. En 4 es el parámetro opcional (`if business_type is not None:` en `:278`, `:296`, `:312` y `:351`) y en 2 un valor fijo (`/b2b` en `:370` y `/b2c` en `:386`). No usa ningún helper.
+- **Parámetros de consulta:** se declaran con `Annotated[T, Query(...)] = valor` (skill `fastapi`), y la respuesta con `response_model=` (regla BE-01).
 - **Generación aleatoria:** usa el estado **global** de `random`, fijado con `random.seed(seed)` **en cada petición**, porque cada endpoint vuelve a llamar a `generate_mock_movements(seed=42)`. Cambiar el número o el orden de las llamadas a `random` cambia todo el conjunto de datos (regla BE-05).
 
 ### Frontend (`frontend/src/`)
@@ -54,6 +55,8 @@ Dentro de `routes.py`:
 | `lib/financial-utils.ts` | Funciones puras: `computeKPIs`, `computeMonthlyData`, `formatCurrency` (USD) y `formatPercent` |
 | `lib/mock-data.ts` | Datos de 2024 que **no importa nadie** (código heredado) |
 | `index.css` | Tema: variables CSS para `:root` y `.dark`, mapeadas a Tailwind en `@theme inline` |
+
+Fuera de `src/`, [`frontend/index.html`](../frontend/index.html) lleva el título, la meta description y `<meta name="robots" content="noindex, nofollow">` (panel interno), y [`frontend/public/robots.txt`](../frontend/public/robots.txt) deja rastrear la página (para que se lea el `noindex`) y excluye `/api/`. Vite copia `public/` tal cual a `dist/`.
 
 ## Acoplamientos que hay que conocer
 

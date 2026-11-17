@@ -1,7 +1,7 @@
 ---
 name: progress
 description: Progreso del proyecto de skills de agentes — skills aplicadas, cambios verificados, skill del ecosistema elegida y skill interna
-last_verified: 2026-11-17 (sobre el commit 4cd1088 y los cambios de la Fase 3 de skills)
+last_verified: 2026-11-17 (sobre el commit 35a50a5 y los cambios de la Fase 4 de skills)
 ---
 
 # Progreso: mejora del dashboard con skills de agentes
@@ -261,3 +261,99 @@ Rolldown llama `chart-skeleton-*.js` al trozo de código compartido (React, `Car
 **Lighthouse Performance no se pasó.** En modo Snapshot no mide la carga ni el CLS, y en modo Navigation mediría el servidor de desarrollo de Vite, no el build. Las mediciones de arriba son directas.
 
 **Referencias actualizadas.** Al mover código, 14 referencias a números de línea de `.agents/rules/`, `engineering-findings.md` y el memory-bank quedaron desfasadas, entre ellas `income-outcome-chart.tsx:113`, que ya lo estaba desde la Fase 2. Se corrigieron y el ejemplo de FE-05 se actualizó (`h-9`).
+
+## Fase 4: Explorar el ecosistema y aplicar dos skills más (`seo` y `fastapi`)
+
+**Fecha:** 2026-11-17. Plan: [`plans/phase-4-explore-ecosystem.md`](../plans/phase-4-explore-ecosystem.md). Skills: [`.agents/skills/seo/`](../.agents/skills/seo/) y [`.agents/skills/fastapi/`](../.agents/skills/fastapi/).
+
+### Búsquedas con `npx skills find`
+
+Se buscaron **6 temas**, elegidos porque el repo los usa de verdad. Las más relevantes de cada búsqueda:
+
+| Tema | Candidata (origen · instalaciones) | Valoración para este repo |
+|---|---|---|
+| `seo` | **`seo`** (addyosmani/web-quality-skills · 56K) | Mismo autor y colección que `accessibility`. Cubre la meta description que quedó pendiente en la Fase 3 |
+| `seo` | `seo-audit` (coreyhaines31/marketingskills · 257K) | Orientada a marketing, no a código |
+| `fastapi` | **`fastapi`** (fastapi/fastapi, **oficial** · 16K) | Del equipo de FastAPI, el framework del backend |
+| `testing` | `javascript-testing-patterns` / `python-testing-patterns` (wshobson/agents · 21K / 41K) | Útiles para Vitest y pytest, pero no se eligieron |
+| `testing` | `webapp-testing` (anthropics/skills · 207K) | End-to-end con Playwright, que el repo no tiene |
+| `tailwind` | `tailwind-4-docs` (lombiq · 19K), `tailwind-v4-shadcn` (secondsky · 8K) | Encajan con Tailwind 4 + shadcn, pero no hay ningún problema de estilos abierto |
+| `typescript` | `typescript-advanced-types` (wshobson/agents · 100K) | Los tipos del repo son simples |
+| `performance` | `performance` (addyosmani/web-quality-skills · 45K) | Se solapa con lo hecho en la Fase 3 |
+
+El resto de resultados no aplica (Go, Expo, Convex, GSAP, Power BI, Clerk, LangChain…).
+
+### Elección
+
+Se leyeron los `SKILL.md` de las candidatas antes de instalarlas y se cruzaron con `index.html`, `main.py` y `routes.py`. **El usuario eligió dos:**
+
+- **`seo`**: la página no tenía meta description (pendiente V4 de la Fase 3) y `robots.txt` no era válido.
+- **`fastapi`**: es la skill oficial del framework, y es el primer cambio en el backend (las fases 2 y 3 fueron solo de frontend).
+
+Se instalaron con `npx skills add <repo> --skill <nombre> -a universal --copy -y`. El contenido instalado coincide con el que se leyó, y `skills-lock.json` registra las dos.
+
+### Skill `seo`: auditoría
+
+Lighthouse SEO de antes (modo Snapshot, Mobile): **60/100**.
+
+| Auditoría | Antes | Causa |
+|---|---|---|
+| `document-title`, `link-text`, `crawlable-anchors` | ✅ | El título ya se arregló en la Fase 2 |
+| `meta-description` | ❌ | No había `<meta name="description">` |
+| `robots-txt` | ❌ | No existe `robots.txt`: Vite responde `/robots.txt` con el `index.html` (fallback de SPA) |
+
+### Skill `seo`: cambios aplicados (aprobados por el usuario)
+
+| # | Regla de la skill | Archivo | Cambio |
+|---|---|---|---|
+| S1 | *Meta descriptions* (prioridad alta) | `frontend/index.html` | `Executive dashboard with total income, outcome, profit and profit margin, plus monthly charts for the last 12 months.` Describe solo lo que se ve: 4 KPI totales y 2 gráficas mensuales. No repite el "2024" de la cabecera, que es el bug conocido A6 |
+| S2 | *Crawl and index controls* (meta robots) | `frontend/index.html` | `<meta name="robots" content="noindex, nofollow">`. **Decisión del usuario**: es un panel interno con datos financieros y no debe salir en buscadores |
+| S4 | *Crawlability* (`robots.txt`) | `frontend/public/robots.txt` (nuevo) | `User-agent: *`, `Allow: /`, `Disallow: /api/`. No bloquea `/`: si la página estuviera bloqueada, el buscador no leería el `noindex` |
+
+**Desviación consciente de la skill:** su lista marca "No `noindex` on important pages". Aquí se usa `noindex` a propósito porque el panel es interno.
+
+### Skill `seo`: no aplicado
+
+| Regla | Motivo |
+|---|---|
+| Canonical, sitemap y línea `Sitemap:` | Necesitan el dominio real, que no existe. Además, una página `noindex` no va en un sitemap |
+| Datos estructurados, hreflang, enlaces internos, imágenes | No aplican a un panel de una sola página, en un idioma y sin imágenes |
+| Cabeceras de seguridad, `X-Robots-Tag` en el backend | El backend en `:8000` es otro origen y no lo cubre este `robots.txt`. Fuera de alcance en un entorno local, y BE-04 protege `main.py` |
+| `llms.txt`, WebMCP | La propia skill dice que solo se añaden si se piden |
+
+### Skill `fastapi`: auditoría
+
+`routes.py` declaraba los 31 parámetros de consulta con `= Query(default=...)`, y las 2 fechas obligatorias de `/comparison` con `Query(...)`. Los 9 endpoints ya usaban `def` normal (correcto según la skill, porque no hay `await`) y declaraban a la vez tipo de retorno y `response_model`.
+
+### Skill `fastapi`: cambios aplicados (aprobados por el usuario)
+
+| # | Regla de la skill | Archivo | Cambio |
+|---|---|---|---|
+| F1 | *Use `Annotated`* | `backend/app/routes.py` | Los 29 parámetros opcionales pasan a `Annotated[T, Query(...)] = valor`, conservando las restricciones (`limit` con `ge=1, le=20`, `threshold` con `ge=0`) |
+| F2 | *Do not use Ellipsis* | `backend/app/routes.py` | `start_date` y `end_date` de `/comparison` pasan a `Annotated[date, Query()]`, que siguen siendo obligatorios |
+| — | Coherencia con el código | `.agents/rules/backend.md` (BE-01) | El ejemplo "✅ Haz" usa `Annotated`, y "❌ Evita" añade `Query(default=...)` y `Query(...)` citando la skill |
+
+### Skill `fastapi`: no aplicado
+
+| Regla | Motivo |
+|---|---|
+| *Return type* en vez de `response_model` cuando coinciden | **Choca con la regla BE-01 del repo, que exige `response_model=`. El usuario decidió que manda la regla del repo.** Los endpoints ya tienen tipo de retorno, así que la skill no se contradice: solo sobra la duplicación |
+| `prefix` en el `APIRouter` | `/health` está en la raíz y el resto en `/api/metrics`: haría falta dividir el router |
+| Modelos de parámetros (`Annotated[Model, Query()]`) | Cada endpoint usa un subconjunto distinto de filtros, y cambiar el esquema arriesga BE-02 |
+| `fastapi dev` / `fastapi run`, FastAPI Cloud | El backend arranca con uvicorn + debugpy en Docker (BE-04) |
+| SSE, streaming, OpenTelemetry, `app.frontend()`, SQLModel, Asyncer | No hay streaming, telemetría, base de datos ni código async, y el frontend lo sirve Vite |
+| uv, Ruff, ty | No están instalados en el proyecto |
+
+### Verificación final
+
+| Comprobación | Resultado |
+|---|---|
+| Lighthouse SEO (Snapshot, Mobile) | **60 → 100**: `meta-description` ✅ y `robots-txt` ✅ |
+| `robots.txt` | Vite lo sirve como `text/plain`, y el build lo copia a `dist/` junto con las dos meta |
+| `openapi.json` antes y después (JSON ordenado) | **Idéntico**: el contrato no cambia (BE-02) |
+| Validación | `/comparison` sin fechas, `limit=99` y `category=foo` siguen devolviendo 422 |
+| TE-01 | ✅ pytest 15 (con el aviso E2 de siempre) · vitest 6 · lint OK · build sin advertencias, con los mismos trozos que en la Fase 3 |
+
+**El 100 es en modo Snapshot.** La auditoría `is-crawlable` solo corre en modo Navigation, y ahí fallaría **a propósito** por el `noindex`.
+
+**Referencias de línea.** El cambio de `routes.py` sustituye líneas una por una, así que no se ha movido ninguna referencia. El revisor las comprobó todas.
