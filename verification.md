@@ -329,3 +329,47 @@ Encontró estos problemas, todos comprobados antes de decidir:
 | R5 | Hijos de `<>` sin sangrar | Decisión deliberada por FE-04 | Detalle | Sin cambios |
 | R6 | Iconos de la leyenda | Recharts les pone `aria-label="income legend icon"` (`DefaultLegendContent.js:133`) | Detalle | Limitación aceptada |
 | R7 | Etiqueta y valor de cada KPI | Sin relación programática (1.3.1) | Detalle | `<dl>/<dt>/<dd>` aplicado, con el mismo aspecto |
+
+---
+
+## Skills · Fase 3: Aplicar la skill `vercel-react-best-practices`
+
+**Fecha:** 2026-11-17. Plan: [`plans/phase-3-vercel-react-best-practices.md`](plans/phase-3-vercel-react-best-practices.md). El detalle está en [`memory-bank/progress.md`](memory-bank/progress.md) (Fase 3).
+
+### Comprobaciones ejecutadas
+
+| Comprobación | Resultado |
+|---|---|
+| Composición del bundle (*source maps*) | Recharts y sus dependencias ≈ 58 % del JS; lucide, solo 5 iconos |
+| Build antes → después | 585,86 kB con advertencia → 229 kB iniciales + Recharts en diferido, **sin advertencias** |
+| CLS (backend en pausa, `PerformanceObserver`) | 0,0116 → **0**, con la misma altura en 8 anchos (320-1366 px) |
+| Orden de descarga | El código de las gráficas se descarga en paralelo a la API (~52-64 ms) |
+| Fallo de carga de una gráfica (`throw` temporal, retirado) | ✅ Solo esa gráfica muestra el error; el resto sigue funcionando |
+| TE-01 | ✅ pytest 15 · vitest 6 · lint OK · build OK |
+
+### Correcciones (afirmación incorrecta → corrección)
+
+- **"El CLS es 0" (primera medición)** → La API responde en ~0,1 s y los *skeletons* casi no se llegaban a ver. Con el backend en pausa (`docker compose pause backend`), el CLS real era 0,0116.
+- **"V3 deja el CLS a 0" (medido solo a 1366 px y en 3 iframes)** → La revisión independiente lo dudó. Al medir 320, 360, 640 y 700 px, seguía habiendo saltos de ~20 px: el texto de ayuda de las KPI y la descripción de las gráficas pasan a 2 líneas. Se corrigió reservando esas líneas (F2 y F3).
+- **Referencias de línea en reglas y documentación** → `income-outcome-chart.tsx:113` (FE-06) estaba desfasada desde la Fase 2, y `App.tsx:16/37/46/49` se movieron en esta fase. 14 referencias corregidas en `.agents/rules/`, `engineering-findings.md` y el memory-bank.
+
+### Revisión independiente del diff
+
+Un **agente nuevo, sin contexto**, revisó el diff contra la skill y contra `frontend.md`, y volvió a ejecutar build, lint y tests. Confirmó como correcto:
+- `React.lazy` con exportaciones con nombre (FE-02 se mantiene);
+- un `Suspense` por gráfica;
+- **sin cascada**: el código de las gráficas y la API se piden en paralelo, y Recharts se descarga una sola vez;
+- rutas de `import()` estáticas (`bundle-analyzable-paths`);
+- que `bundle-preload` no aportaría nada;
+- FE-02/03/04 y eslint;
+- la accesibilidad de la Fase 2 intacta;
+- que no faltaba ninguna regla que aplique.
+
+| # | Hallazgo | Comprobación | Gravedad | Decisión |
+|---|---|---|---|---|
+| F1 | Sin *error boundary*, un fallo al cargar el código de una gráfica desmonta toda la app | ✅ No había ninguno (`grep`) | Debe corregirse | `ChartErrorBoundary` por gráfica, comprobado con un fallo provocado |
+| F2 | El *skeleton* del texto de ayuda no encaja por debajo de `xl` | ✅ Medido: salto en 320, 640 y 700 px | Debe corregirse | `min-h-[3.25em]` en el `<dd>` y en el *skeleton* |
+| F3 | La descripción de las gráficas ocupa 2 líneas en el móvil | ✅ Medido: 422 → 442 px en 320 y 360 px | Debe corregirse | `max-sm:min-h-10` en la descripción y en el *skeleton* |
+| F4 | El trozo `chart-skeleton-*.js` tiene un nombre confuso: es código compartido | ✅ | Detalle | Se deja: es el comportamiento del bundler |
+| F5 | El *skeleton* del *fallback* se cambia por el de la gráfica, y el parpadeo se reinicia | ✅ | Detalle | Se deja: misma altura, sin salto |
+| F6 | "Financial data loaded." puede anunciarse antes de que se pinte la gráfica | ✅ En teoría | Detalle | Se deja: el código de las gráficas empieza a descargarse antes que la API |

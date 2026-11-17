@@ -1,7 +1,7 @@
 ---
 name: product-overview
 description: Qué es el producto, qué muestra, qué ofrece su API y qué no es
-last_verified: 2026-11-17 (sobre el commit 8c44273 y los cambios de accesibilidad de la Fase 2 de skills)
+last_verified: 2026-11-17 (sobre el commit 4cd1088 y los cambios de la Fase 3 de skills)
 ---
 
 # Descripción del producto
@@ -23,13 +23,13 @@ Una sola página ([`App.tsx`](../frontend/src/App.tsx)) con:
 
 | Elemento | Contenido | Archivo |
 |---|---|---|
-| Cabecera | Título y etiqueta de periodo "2024 - Full Year" (escrita a mano, ver [estado actual](current-state.md)) | `dashboard-header.tsx`, `App.tsx:49` |
+| Cabecera | Título y etiqueta de periodo "2024 - Full Year" (escrita a mano, ver [estado actual](current-state.md)) | `dashboard-header.tsx`, `App.tsx:62` |
 | 4 tarjetas KPI | Total Income, Total Outcome, Profit, Profit Margin | `kpi-row.tsx`, `kpi-card.tsx` |
 | Gráfica "Income vs. Outcome" | Ingresos y gastos por mes | `income-outcome-chart.tsx` |
 | Gráfica "Profit Margin %" | Margen de beneficio por mes | `profit-percent-chart.tsx` |
 
-- Mientras cargan los datos se muestran *skeletons*. Si la API falla, aparece un mensaje de error (`App.tsx:37`), las tarjetas KPI muestran "—" y las gráficas, "No data available to display".
-- La interfaz se muestra siempre en modo oscuro (clase `dark` en `App.tsx:46`).
+- Mientras cargan los datos se muestran *skeletons*. Si la API falla, aparece un mensaje de error (`App.tsx:50`), las tarjetas KPI muestran "—" y las gráficas, "No data available to display". Si lo que falla es la carga del código de una gráfica, solo esa muestra "Could not load the chart.". Los *skeletons* ocupan lo mismo que el contenido final, así que nada salta al llegar los datos.
+- La interfaz se muestra siempre en modo oscuro (clase `dark` en `App.tsx:59`).
 - No hay filtros, navegación ni interacción, salvo los *tooltips* de las gráficas. Las gráficas también se pueden recorrer con el teclado: Tab para entrar y flechas para moverse entre meses (capa de accesibilidad de Recharts).
 - **Accesibilidad** (skill `accessibility`, ver [`progress.md`](progress.md)):
   - el título de la pestaña es "Financial Overview · Executive metrics dashboard";

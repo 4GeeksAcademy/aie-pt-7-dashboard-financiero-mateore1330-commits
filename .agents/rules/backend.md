@@ -43,7 +43,7 @@ def get_top_categories(operation_type: OperationType = Query(default="outcome"),
 
 Cualquier otro cambio requiere que la tarea pida explícitamente un cambio incompatible.
 
-**Por qué:** el backend expone 8 endpoints `/api/metrics*` más `/health`, y el frontend solo llama a `/api/metrics` ([`App.tsx:16`](../../frontend/src/App.tsx#L16)). Aun así, todos tienen tests en [`test_routes.py`](../../backend/tests/test_routes.py) y forman parte de la API documentada en `/docs` (hallazgo A5).
+**Por qué:** el backend expone 8 endpoints `/api/metrics*` más `/health`, y el frontend solo llama a `/api/metrics` ([`App.tsx:29`](../../frontend/src/App.tsx#L29)). Aun así, todos tienen tests en [`test_routes.py`](../../backend/tests/test_routes.py) y forman parte de la API documentada en `/docs` (hallazgo A5).
 
 **✅ Haz:** dejar `/api/metrics/b2b` y `/api/metrics/b2c` aunque se pueda filtrar con `business_type`.
 

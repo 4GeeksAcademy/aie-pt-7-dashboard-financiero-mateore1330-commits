@@ -1,8 +1,8 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { Skeleton } from '@/components/ui/skeleton'
 import { type MonthlyDataPoint } from '@/lib/financial-types'
 import { formatPercent } from '@/lib/financial-utils'
 import { ChartDataTable } from './chart-data-table'
+import { ChartSkeleton } from './chart-skeleton'
 import {
   LineChart,
   Line,
@@ -51,17 +51,7 @@ function CustomTooltip({ active, payload, label }: CustomTooltipProps) {
 
 export function ProfitPercentChart({ data, loading }: ProfitPercentChartProps) {
   if (loading) {
-    return (
-      <Card className="border-border/60">
-        <CardHeader className="pb-4">
-          <Skeleton className="h-5 w-52" />
-          <Skeleton className="h-3 w-64 mt-1" />
-        </CardHeader>
-        <CardContent>
-          <Skeleton className="h-[280px] w-full rounded-lg" />
-        </CardContent>
-      </Card>
-    )
+    return <ChartSkeleton />
   }
 
   const hasData = data.some((d) => d.profitPercent !== 0)
@@ -72,7 +62,7 @@ export function ProfitPercentChart({ data, loading }: ProfitPercentChartProps) {
         <CardTitle className="text-base font-semibold">
           <h2>Profit Margin %</h2>
         </CardTitle>
-        <CardDescription>Monthly profit as a percentage of total income</CardDescription>
+        <CardDescription className="max-sm:min-h-10">Monthly profit as a percentage of total income</CardDescription>
       </CardHeader>
       <CardContent>
         {!hasData ? (

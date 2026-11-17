@@ -1,7 +1,7 @@
 ---
 name: architecture
 description: Cómo fluyen los datos, dónde vive cada responsabilidad y qué partes están acopladas
-last_verified: 2026-11-17 (sobre el commit 8c44273 y los cambios de accesibilidad de la Fase 2 de skills)
+last_verified: 2026-11-17 (sobre el commit 4cd1088 y los cambios de la Fase 3 de skills)
 ---
 
 # Arquitectura
@@ -47,8 +47,8 @@ Dentro de `routes.py`:
 | Ruta | Responsabilidad |
 |---|---|
 | [`main.tsx`](../frontend/src/main.tsx) | Monta `<App />` |
-| [`App.tsx`](../frontend/src/App.tsx) | Pide los datos, gestiona `loading` y `error`, calcula KPIs y serie mensual, y compone la página |
-| `components/dashboard/` | Componentes de negocio: cabecera, fila y tarjeta de KPI, las 2 gráficas y `chart-data-table.tsx` (tabla `sr-only` con los datos de cada gráfica, como alternativa textual) |
+| [`App.tsx`](../frontend/src/App.tsx) | Pide los datos, gestiona `loading` y `error`, calcula KPIs y serie mensual, y compone la página. Las 2 gráficas se cargan con `React.lazy`, cada una dentro de un `ChartErrorBoundary` y un `Suspense` con `ChartSkeleton` como *fallback*: Recharts va en un trozo de JS aparte, que se descarga en paralelo a la petición a la API |
+| `components/dashboard/` | Componentes de negocio: cabecera, fila y tarjeta de KPI, las 2 gráficas, `chart-data-table.tsx` (tabla `sr-only` con los datos de cada gráfica, como alternativa textual), `chart-skeleton.tsx` (estado de carga de las gráficas y *fallback* del `Suspense`) y `chart-error-boundary.tsx` (si falla la carga de una gráfica, solo esa muestra un error; es una clase porque React lo exige) |
 | `components/ui/` | Primitivas de shadcn/ui (`card`, `skeleton`) |
 | `lib/financial-types.ts` | Tipos del contrato (`FinancialMovement`…) y de la vista (`KPIMetrics`, `MonthlyDataPoint`) |
 | `lib/financial-utils.ts` | Funciones puras: `computeKPIs`, `computeMonthlyData`, `formatCurrency` (USD) y `formatPercent` |

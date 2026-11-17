@@ -1,7 +1,7 @@
 ---
 name: current-state
 description: Qué funciona hoy, carencias conocidas y siguientes prioridades técnicas
-last_verified: 2026-11-17 (sobre el commit 8c44273 y los cambios de accesibilidad de la Fase 2 de skills)
+last_verified: 2026-11-17 (sobre el commit 4cd1088 y los cambios de la Fase 3 de skills)
 ---
 
 # Estado actual
@@ -20,7 +20,7 @@ last_verified: 2026-11-17 (sobre el commit 8c44273 y los cambios de accesibilida
 | `pytest` | ✅ 15 passed (1 aviso, ver carencias) |
 | `npm test` | ✅ 6 passed |
 | `npm run lint` | ✅ Sin errores |
-| `npm run build` | ✅ Correcto (1 aviso de tamaño, ver carencias) |
+| `npm run build` | ✅ Correcto y sin avisos (desde la Fase 3 de skills: JS inicial de 229 kB y Recharts en un trozo aparte) |
 | Agrupación mensual en `America/New_York` | ✅ 12 meses (corregido en `94b6fd1`) |
 | Accesibilidad (2026-11-17) | ✅ Lighthouse Accessibility 100 (en modo Snapshot, antes y después), más la revisión manual de la skill `accessibility`: teclado, foco con 4,6:1, gráficas con nombre y tabla de datos, y anuncios de estado. Ver [`progress.md`](progress.md) |
 
@@ -40,7 +40,8 @@ last_verified: 2026-11-17 (sobre el commit 8c44273 y los cambios de accesibilida
 | `57d00da` | **docs:** entregables del proyecto en los dos README |
 | `8022d3e` | **fix:** mensaje de error de la interfaz traducido al inglés (N6) |
 | `8c44273` | **chore:** skills `accessibility` y `vercel-react-best-practices` en `.agents/skills/` |
-| — | **fix:** accesibilidad del dashboard con la skill `accessibility` |
+| `4cd1088` | **fix:** accesibilidad del dashboard con la skill `accessibility` |
+| — | **fix:** gráficas con carga diferida y *skeletons* sin salto, con la skill `vercel-react-best-practices` |
 
 El detalle de cada verificación está en [`verification.md`](../verification.md), y el análisis de hallazgos en [`engineering-findings.md`](../engineering-findings.md).
 
@@ -50,9 +51,9 @@ Todas comprobadas en el código. El ID es el del hallazgo en `engineering-findin
 
 | Carencia | Evidencia | ID |
 |---|---|---|
-| La etiqueta de periodo dice "2024 - Full Year" (y "2024 — Full Year" como valor por defecto), pero los datos son de los 12 meses anteriores al actual | `App.tsx:49`, `dashboard-header.tsx:7` | A6 |
+| La etiqueta de periodo dice "2024 - Full Year" (y "2024 — Full Year" como valor por defecto), pero los datos son de los 12 meses anteriores al actual | `App.tsx:62`, `dashboard-header.tsx:7` | A6 |
 | Código heredado sin usar: `mock-data.ts` y `assets/hero.png` | Ningún import | A6 |
-| 7 de los 8 endpoints `/api` no los usa el frontend | `App.tsx:16` es el único `fetch` | A5 |
+| 7 de los 8 endpoints `/api` no los usa el frontend | `App.tsx:29` es el único `fetch` | A5 |
 | Todo el backend está en un archivo, con el filtro `business_type` escrito en línea en 6 endpoints | `routes.py:278-386` | A4 |
 | No hay formateador, y conviven dos estilos de comillas y `;` | `frontend/src/**` | N3 |
 | El contrato de datos está duplicado a mano | `routes.py`, `financial-types.ts` | D1 |
@@ -60,7 +61,6 @@ Todas comprobadas en el código. El ID es el del hallazgo en `engineering-findin
 | `pytest` muestra `StarletteDeprecationWarning` (httpx con `TestClient`). Fijar versiones lo congela pero no lo elimina | Salida de `pytest` | E2 |
 | El frontend instala con `npm install` en lugar de `npm ci`, y las imágenes base no fijan la versión de parche | `frontend/Dockerfile:6`, `FROM python:3.13-slim` / `node:24-alpine` | E2 |
 | debugpy siempre activo y CORS `*` con credenciales | `backend/Dockerfile`, `main.py` | E3 |
-| El build avisa de un bundle JS de 586 kB (más de 500 kB) | Salida de `npm run build` | — |
 | La fuente `Inter` se declara pero no se carga | `index.css:79` | — |
 | No hay tests de componentes React, solo de `lib/` | No hay testing-library | — |
 | TypeScript sin modo `strict`: `any` implícito y errores de `null` compilan | `tsconfig.app.json` | — |

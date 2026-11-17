@@ -1,7 +1,7 @@
 ---
 name: progress
 description: Progreso del proyecto de skills de agentes — skills aplicadas, cambios verificados, skill del ecosistema elegida y skill interna
-last_verified: 2026-11-17 (sobre el commit 8c44273 y los cambios de la Fase 2)
+last_verified: 2026-11-17 (sobre el commit 4cd1088 y los cambios de la Fase 3 de skills)
 ---
 
 # Progreso: mejora del dashboard con skills de agentes
@@ -189,3 +189,75 @@ Las 3 que pasan de más son las de tablas (`td-has-header`, `td-headers-attr` y 
   - las KPI se ven igual que antes.
 - **Error:** con el backend parado se muestra `role="alert"`.
 - **No comprobado:** el `motion-safe` con "Reducir movimiento" activado en el sistema no se pudo simular desde la extensión. Está comprobado en el código y en el CSS generado (`@media (prefers-reduced-motion: no-preference)`).
+
+## Fase 3: Aplicar la skill `vercel-react-best-practices`
+
+**Fecha:** 2026-11-17. Plan: [`plans/phase-3-vercel-react-best-practices.md`](../plans/phase-3-vercel-react-best-practices.md). Skill: [`.agents/skills/vercel-react-best-practices/`](../.agents/skills/vercel-react-best-practices/).
+
+Antes de la auditoría se leyeron enteras las reglas candidatas que en la Fase 1 solo se habían revisado:
+- `bundle-preload`, `bundle-analyzable-paths` y `async-defer-await`;
+- `rendering-usetransition-loading`, `rendering-hoist-jsx`, `rendering-resource-hints` y `rendering-svg-precision`;
+- el resumen de las 15 `rerender-*`, las 14 `js-*` y las 4 `advanced-*`.
+
+El proyecto **no usa React Compiler** (`vite.config.ts` solo carga `react()` y `tailwindcss()`), así que las reglas que dicen "con React Compiler no hace falta" sí aplican.
+
+### Auditoría (medida, no supuesta)
+
+| Medición | Resultado |
+|---|---|
+| Composición del JS de 586 kB (*source maps* de un build aparte, en `/tmp` del contenedor) | Recharts y sus dependencias ≈ 58 %, react-dom ≈ 28 %, tailwind-merge ≈ 5 %, código propio ≈ 1,4 %. De `lucide-react` solo se incluyen los 5 iconos que se usan |
+| Layout shift (backend en pausa para ver los *skeletons*, `PerformanceObserver` de `layout-shift`) | CLS **0,0116** a 1366 px: tarjetas KPI de 206 → 233 px y gráficas de 414 → 422 px |
+| Imágenes, fuentes y metadatos | Sin `<img>` (`hero.png` no se usa); `Inter` se declara pero no se descarga; sin `<meta name="description">` |
+
+### Cambios aplicados (todos aprobados por el usuario antes de aplicarse)
+
+| # | Origen | Archivos | Cambio |
+|---|---|---|---|
+| V1 | Regla `bundle-dynamic-imports` (CRITICAL). En Vite, `next/dynamic` equivale a `React.lazy` | `App.tsx` y `chart-skeleton.tsx` (nuevo) | Las 2 gráficas se cargan con `React.lazy` + `Suspense`. El *fallback* es el `ChartSkeleton` compartido, que también usan las gráficas como estado de carga (antes estaba duplicado) |
+| V3 | **No sale de la skill**: regla FE-05 del repo ("misma forma que el contenido final") y "anti-patrones de layout shift" del enunciado | `kpi-card.tsx`, `chart-skeleton.tsx` y las 2 gráficas | Alturas de los *skeletons* iguales a las del contenido: icono `h-7`, valor `h-9`, título `h-6` y descripción de 20 px |
+| F1 | Revisión independiente: V1 introducía un fallo nuevo | `chart-error-boundary.tsx` (nuevo) y `App.tsx` | Un *error boundary* por gráfica. Si falla la carga de su código, solo esa gráfica muestra "Could not load the chart." (`role="alert"`) y el resto de la app sigue funcionando. Es una clase porque React lo exige (excepción a FE-02, comentada en el código) |
+| F2 | Revisión independiente (V3 incompleto) | `kpi-card.tsx` | El texto de ayuda reserva siempre 2 líneas (`min-h-[3.25em]`), y el *skeleton* también |
+| F3 | Revisión independiente (V3 incompleto) | Las 2 gráficas y `chart-skeleton.tsx` | La descripción reserva 2 líneas en el móvil (`max-sm:min-h-10`), y el *skeleton* también |
+
+### No aplicado (decidido con el usuario)
+
+| Regla o tema | Motivo |
+|---|---|
+| `js-combine-iterations` en `computeKPIs` | Aplica, pero con 360 movimientos no tiene impacto medible. Se evita tocar código que funciona |
+| `<meta name="description">` | No sale de la skill. Se valora en la Fase 4 con una skill de SEO |
+| `next/image`, `next/font` y metadata de Next | La skill no tiene esas reglas (Fase 1), el proyecto no es Next, no hay imágenes y no se descarga ninguna fuente |
+| `bundle-barrel-imports` | Medido: Vite ya incluye solo los 5 iconos que se usan |
+| `rerender-derived-state-no-effect` | `metrics` y `monthlyData` salen de la respuesta de la API, no de props ni de otro estado |
+| `rendering-usetransition-loading` | `loading` tiene que valer `true` desde el primer render; `isPending` empieza en `false` |
+| `advanced-init-once` | La petición doble solo pasa en desarrollo (`StrictMode`) y es una petición de datos, no una inicialización |
+| `client-swr-dedup` | Una dependencia nueva para una sola petición |
+| `bundle-preload` | No aporta nada: el código de las gráficas ya empieza a descargarse en el primer render y no hay hover ni intención que anticipar (confirmado por la revisión) |
+| `rendering-hoist-jsx`, `rendering-svg-precision` y `rendering-resource-hints` | Impacto nulo: JSX trivial, SVG generados por Recharts y API del mismo origen |
+
+### Verificación final
+
+**Build:**
+
+| | Antes | Después |
+|---|---|---|
+| JS inicial | 585,86 kB (1 trozo) | **229 kB**: `index` 188,15 + código compartido 40,86 |
+| Recharts | En el JS principal | `LineChart` de 342,87 kB, cargado en diferido |
+| Advertencia ">500 kB" | Sí | **No** |
+
+Rolldown llama `chart-skeleton-*.js` al trozo de código compartido (React, `Card`, `Skeleton`, `cn`…). Es el comportamiento normal del bundler.
+
+**Sin cascada.** En el navegador, el código de las gráficas empieza a descargarse en el primer render (~52-64 ms), en paralelo a la petición a la API, y Recharts se descarga una sola vez.
+
+**CLS.** Con el backend en pausa y midiendo "cargando → con datos", la altura es igual en **los 8 anchos medidos**: 320, 360, 375, 640, 700, 768 y 1024 px (iframes) y 1366 px (ventana). El CLS a 1366 px pasa de **0,0116 a 0**. Coste aceptado: a algunos anchos, las tarjetas KPI tienen ~20 px más de espacio abajo, porque el texto de ayuda siempre reserva 2 líneas.
+
+**Error de carga.** Se hizo fallar a propósito el módulo de una gráfica con un `throw` temporal, después retirado. Solo esa gráfica mostró el error, a la misma altura, y las KPI, la otra gráfica y "Financial data loaded." siguieron funcionando.
+
+**TE-01:** pytest 15 · vitest 6 · lint OK · build OK, sin avisos.
+
+**Aceptado sin cambios** (de la revisión):
+- el *skeleton* de la gráfica se reinicia si su código llega antes que los datos (misma altura, sin salto);
+- "Financial data loaded." puede anunciarse un instante antes de que se pinte la gráfica.
+
+**Lighthouse Performance no se pasó.** En modo Snapshot no mide la carga ni el CLS, y en modo Navigation mediría el servidor de desarrollo de Vite, no el build. Las mediciones de arriba son directas.
+
+**Referencias actualizadas.** Al mover código, 14 referencias a números de línea de `.agents/rules/`, `engineering-findings.md` y el memory-bank quedaron desfasadas, entre ellas `income-outcome-chart.tsx:113`, que ya lo estaba desde la Fase 2. Se corrigieron y el ejemplo de FE-05 se actualizó (`h-9`).
