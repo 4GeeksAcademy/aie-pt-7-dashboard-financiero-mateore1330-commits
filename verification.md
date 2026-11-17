@@ -476,3 +476,32 @@ Al probar los comandos de M1-M10 aparecieron dos fallos más: el de la longitud 
 | UR-03 | `8adab72` | El resultado de Lighthouse SEO se anotó en `current-state.md` en el commit siguiente |
 
 Ya estaban subidos, así que no se reescribe la historia. Los commits de esta fase en adelante cumplen GD-01 (cuerpo a 72) y UR-03.
+
+## Skills · Fase 6: Memory bank al día
+
+**Fecha:** 2026-11-17. Plan: [`plans/phase-6-memory-bank.md`](plans/phase-6-memory-bank.md).
+
+### Comprobaciones ejecutadas
+
+| Comprobación | Resultado |
+|---|---|
+| `tech-stack.md` frente a `pip freeze` y `npm ls` | ✅ Python 3.13.18, Node 24.22.3, npm 11.19.1, 31 paquetes fijados y todas las versiones de las tablas |
+| Datos y API | ✅ 360 movimientos (2025-11-01 a 2026-10-28) y 9 endpoints con 200 |
+| Referencias de línea de `current-state.md`, `architecture.md` y `product-overview.md` | ✅ Las 8 apuntan a lo que dicen |
+| QA final con la skill interna [`pre-merge-qa`](.skills/pre-merge-qa/SKILL.md), por un agente nuevo | ✅ **Lista para PR (0 ❌)** en 30 checks. Los ⚠️ son el *error boundary* como clase, las excepciones aceptadas en la Fase 5 y el trabajo de esta fase sin commitear |
+
+### Auditoría independiente del memory bank
+
+Un **agente nuevo, sin contexto**, contrastó cada afirmación del memory bank con el repo, los contenedores, los informes de Lighthouse y `git show --stat` de cada commit citado. No encontró funcionalidades descritas que no existan. Confirmó los 17 hashes del historial, las versiones, los Lighthouse (Accessibility 100 → 100 con 20 → 23 auditorías; SEO 60 → 100), los tamaños del build y las anclas del resumen de `progress.md`.
+
+| # | Afirmación incorrecta | Corrección |
+|---|---|---|
+| 1 | `progress.md`, Fase 4: "31 parámetros con `Query(default=...)`" | 29 con `Query(default=...)` y 2 con `Query(...)` (31 en total) |
+| 2 | `progress.md`, resumen: `8adab72` como commit del lock | El lock de `seo` y `fastapi` entró en `662e7f3` |
+| 3 | `progress.md`, Fase 4: "pendiente V4 de la Fase 3" | V4 no existe en la documentación: "pendiente de la Fase 3, ver «No aplicado»" |
+| 4 | `current-state.md`: "Qué funciona (comprobado el 2026-11-13)" | 2026-11-17 |
+| 5 | `architecture.md` y `progress.md`: `Annotated[T, Query(...)] = valor` | `Query(...)` es la forma con Ellipsis que se quitó: `Annotated[T, Query()] = valor`, y las fechas obligatorias sin valor |
+| 6 | `progress.md`, Fase 1: referencias de línea de `App.tsx` y `kpi-card.tsx` desfasadas | Eran correctas en `8022d3e`, el punto de partida: se indica así |
+| 7 | `product-overview.md`: la cabecera dice "Financial Overview · Executive metrics dashboard" | Es título y subtítulo por separado; unidos son el `<title>` |
+
+**No cambiado (decisión del usuario):** `tech-stack.md` no menciona las skills (`.agents/skills/`, `skills-lock.json`, `.skills/`). No es falso, y están en `progress.md`.

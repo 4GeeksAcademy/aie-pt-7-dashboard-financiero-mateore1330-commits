@@ -1,12 +1,34 @@
 ---
 name: progress
-description: Progreso del proyecto de skills de agentes — skills aplicadas, cambios verificados, skill del ecosistema elegida y skill interna
-last_verified: 2026-11-17 (sobre el commit 662e7f3 y los cambios de la Fase 5 de skills)
+description: Progreso del proyecto de skills de agentes — skills aplicadas, cambios verificados, skills del ecosistema elegidas y skill interna
+last_verified: 2026-11-17 (sobre el commit 23be14d y la revisión final de la Fase 6 de skills)
 ---
 
 # Progreso: mejora del dashboard con skills de agentes
 
 > Rama `feature/agent-skills`. Una sección por fase, con su plan en [`plans/`](../plans/). Las skills de la comunidad viven en [`.agents/skills/`](../.agents/skills/), y su origen y su huella están en [`skills-lock.json`](../skills-lock.json). Mantén este archivo al día cuando cambie lo que dice (regla UR-03).
+
+## Resumen
+
+| Pide el ejercicio | Respuesta | Detalle |
+|---|---|---|
+| Skills aplicadas | `accessibility` y `vercel-react-best-practices` (las del enunciado), y `seo` y `fastapi` (del ecosistema) | [Fase 2](#fase-2-aplicar-la-skill-accessibility), [Fase 3](#fase-3-aplicar-la-skill-vercel-react-best-practices) y [Fase 4](#fase-4-explorar-el-ecosistema-y-aplicar-dos-skills-más-seo-y-fastapi) |
+| Skills del ecosistema elegidas y por qué | 6 búsquedas con `npx skills find`. **`seo`** (addyosmani/web-quality-skills): faltaba la meta description y `robots.txt` no era válido. **`fastapi`** (oficial): primer cambio en el backend, con las convenciones del propio framework | [Fase 4](#fase-4-explorar-el-ecosistema-y-aplicar-dos-skills-más-seo-y-fastapi) |
+| Skill interna creada | [`pre-merge-qa`](../.skills/pre-merge-qa/SKILL.md): QA antes del PR, porque el repo no tiene CI. Probada dos veces con agentes nuevos sobre esta rama | [Fase 5](#fase-5-skill-interna-pre-merge-qa) |
+
+### Cambios verificados
+
+| Cambio | Skill o regla | Cómo se verificó | Commit |
+|---|---|---|---|
+| Skills instaladas con el CLI | — | `skills-lock.json` con origen y huella de cada una | `8c44273` (`accessibility` y `vercel-react-best-practices`), `8adab72` (`seo`) y `662e7f3` (`fastapi`, y las entradas del lock de `seo` y `fastapi`) |
+| Título, gráficas con nombre y tabla `sr-only`, anuncios de estado, foco visible, movimiento reducido, KPI con `dl` | `accessibility` | Lighthouse Accessibility 100 → 100 (20 → 23 auditorías superadas) y revisión con teclado | `4cd1088` |
+| Gráficas con `React.lazy`, *error boundary* por gráfica | `vercel-react-best-practices` (`bundle-dynamic-imports`) | Build: 586 kB con aviso → 229 kB iniciales, sin avisos. Fallo de carga provocado: solo cae esa gráfica | `35a50a5` |
+| *Skeletons* con la altura del contenido final | FE-05 | CLS 0,0116 → 0, igual en 8 anchos | `35a50a5` |
+| Meta description, `noindex`, `robots.txt` | `seo` | Lighthouse SEO 60 → 100 (modo Snapshot) | `8adab72` |
+| Parámetros con `Annotated`, sin `Query(...)` | `fastapi` | `openapi.json` idéntico antes y después, y 422 con valores no válidos | `662e7f3` |
+| Skill interna `pre-merge-qa` y TE-01 al día | — | 2 pruebas con agentes nuevos, 0 comandos fallidos | `23be14d` |
+
+En todos los commits pasan pytest (15), vitest (6), lint y build (TE-01).
 
 ## Fase 1: Descubrir y cargar las skills
 
@@ -64,7 +86,7 @@ No crea nada en `.claude/` ni de forma global.
 
 ### Qué cubre cada skill y qué se aplica a este repo
 
-El repo es **Vite + React 19 (SPA), sin Next.js ni SSR** (ver [`tech-stack.md`](tech-stack.md)).
+El repo es **Vite + React 19 (SPA), sin Next.js ni SSR** (ver [`tech-stack.md`](tech-stack.md)). Las referencias de línea de esta sección son sobre el commit `8022d3e`, el punto de partida: en las fases siguientes el código se movió.
 
 #### `accessibility`
 
@@ -287,7 +309,7 @@ El resto de resultados no aplica (Go, Expo, Convex, GSAP, Power BI, Clerk, LangC
 
 Se leyeron los `SKILL.md` de las candidatas antes de instalarlas y se cruzaron con `index.html`, `main.py` y `routes.py`. **El usuario eligió dos:**
 
-- **`seo`**: la página no tenía meta description (pendiente V4 de la Fase 3) y `robots.txt` no era válido.
+- **`seo`**: la página no tenía meta description (pendiente de la Fase 3, ver su tabla «No aplicado») y `robots.txt` no era válido.
 - **`fastapi`**: es la skill oficial del framework, y es el primer cambio en el backend (las fases 2 y 3 fueron solo de frontend).
 
 Se instalaron con `npx skills add <repo> --skill <nombre> -a universal --copy -y`. El contenido instalado coincide con el que se leyó, y `skills-lock.json` registra las dos.
@@ -323,13 +345,13 @@ Lighthouse SEO de antes (modo Snapshot, Mobile): **60/100**.
 
 ### Skill `fastapi`: auditoría
 
-`routes.py` declaraba los 31 parámetros de consulta con `= Query(default=...)`, y las 2 fechas obligatorias de `/comparison` con `Query(...)`. Los 9 endpoints ya usaban `def` normal (correcto según la skill, porque no hay `await`) y declaraban a la vez tipo de retorno y `response_model`.
+`routes.py` declaraba 29 parámetros opcionales con `= Query(default=...)` y las 2 fechas obligatorias de `/comparison` con `Query(...)` (31 en total). Los 9 endpoints ya usaban `def` normal (correcto según la skill, porque no hay `await`) y declaraban a la vez tipo de retorno y `response_model`.
 
 ### Skill `fastapi`: cambios aplicados (aprobados por el usuario)
 
 | # | Regla de la skill | Archivo | Cambio |
 |---|---|---|---|
-| F1 | *Use `Annotated`* | `backend/app/routes.py` | Los 29 parámetros opcionales pasan a `Annotated[T, Query(...)] = valor`, conservando las restricciones (`limit` con `ge=1, le=20`, `threshold` con `ge=0`) |
+| F1 | *Use `Annotated`* | `backend/app/routes.py` | Los 29 parámetros opcionales pasan a `Annotated[T, Query()] = valor` (o `Query(ge=…, le=…)`), conservando las restricciones (`limit` con `ge=1, le=20`, `threshold` con `ge=0`) |
 | F2 | *Do not use Ellipsis* | `backend/app/routes.py` | `start_date` y `end_date` de `/comparison` pasan a `Annotated[date, Query()]`, que siguen siendo obligatorios |
 | — | Coherencia con el código | `.agents/rules/backend.md` (BE-01) | El ejemplo "✅ Haz" usa `Annotated`, y "❌ Evita" añade `Query(default=...)` y `Query(...)` citando la skill |
 

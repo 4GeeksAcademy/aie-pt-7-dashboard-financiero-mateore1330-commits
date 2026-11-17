@@ -1,14 +1,14 @@
 ---
 name: current-state
 description: Qué funciona hoy, carencias conocidas y siguientes prioridades técnicas
-last_verified: 2026-11-17 (sobre el commit 662e7f3 y los cambios de la Fase 5 de skills)
+last_verified: 2026-11-17 (sobre el commit 23be14d y la revisión final de la Fase 6 de skills)
 ---
 
 # Estado actual
 
 > **Actualízalo** cada vez que se corrija una carencia, se añada funcionalidad o cambie el resultado de las comprobaciones (regla UR-03). La fecha y el commit de la cabecera indican cuándo se comprobó por última vez.
 
-## Qué funciona (comprobado el 2026-11-13)
+## Qué funciona (comprobado el 2026-11-17)
 
 | Comprobación | Resultado |
 |---|---|
@@ -45,7 +45,8 @@ last_verified: 2026-11-17 (sobre el commit 662e7f3 y los cambios de la Fase 5 de
 | `35a50a5` | **fix:** gráficas con carga diferida y *skeletons* sin salto, con la skill `vercel-react-best-practices` |
 | `8adab72` | **feat:** meta description, `noindex` y `robots.txt`, con la skill `seo` |
 | `662e7f3` | **refactor:** parámetros de los endpoints con `Annotated` y sin `Query(...)`, con la skill `fastapi` |
-| — | **docs:** skill interna `pre-merge-qa` en `.skills/` (checks de QA antes del merge) y TE-01 al día (el build ya no tiene avisos) |
+| `23be14d` | **docs:** skill interna `pre-merge-qa` en `.skills/` (checks de QA antes del merge) y TE-01 al día (el build ya no tiene avisos) |
+| — | **docs:** memory bank al día con el resumen del proyecto de skills (Fase 6) |
 
 El detalle de cada verificación está en [`verification.md`](../verification.md), y el análisis de hallazgos en [`engineering-findings.md`](../engineering-findings.md).
 

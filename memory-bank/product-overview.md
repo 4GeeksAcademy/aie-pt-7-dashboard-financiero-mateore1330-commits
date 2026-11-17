@@ -1,7 +1,7 @@
 ---
 name: product-overview
 description: Qué es el producto, qué muestra, qué ofrece su API y qué no es
-last_verified: 2026-11-17 (sobre el commit 35a50a5 y los cambios de la Fase 4 de skills)
+last_verified: 2026-11-17 (sobre el commit 23be14d y la revisión final de la Fase 6 de skills)
 ---
 
 # Descripción del producto
@@ -13,7 +13,7 @@ last_verified: 2026-11-17 (sobre el commit 35a50a5 y los cambios de la Fase 4 de
 Un **dashboard de métricas financieras** de una empresa, con un frontend en React y un backend en FastAPI.
 
 - El README lo describe como *"Dashboard de métricas financieras con frontend en React + TypeScript y backend en FastAPI"* ([`README.es.md`](../README.es.md)).
-- La interfaz se presenta como **"Financial Overview · Executive metrics dashboard"** ([`dashboard-header.tsx`](../frontend/src/components/dashboard/dashboard-header.tsx)).
+- La cabecera muestra el título **"Financial Overview"** y el subtítulo **"Executive metrics dashboard"** ([`dashboard-header.tsx`](../frontend/src/components/dashboard/dashboard-header.tsx)). Unidos con "·", son también el `<title>` de la pestaña ([`index.html`](../frontend/index.html)).
 - La API se llama **"Financial Metrics API"** ([`backend/app/main.py`](../backend/app/main.py)).
 - El repositorio procede de un proyecto formativo de 4Geeks Academy ([`README.md`](../README.md)).
 
