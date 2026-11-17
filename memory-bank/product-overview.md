@@ -1,7 +1,7 @@
 ---
 name: product-overview
 description: Qué es el producto, qué muestra, qué ofrece su API y qué no es
-last_verified: 2026-11-13 (sobre el commit 1b46bed y los cambios de la Fase 4)
+last_verified: 2026-11-17 (sobre el commit 8c44273 y los cambios de accesibilidad de la Fase 2 de skills)
 ---
 
 # Descripción del producto
@@ -30,7 +30,12 @@ Una sola página ([`App.tsx`](../frontend/src/App.tsx)) con:
 
 - Mientras cargan los datos se muestran *skeletons*. Si la API falla, aparece un mensaje de error (`App.tsx:37`), las tarjetas KPI muestran "—" y las gráficas, "No data available to display".
 - La interfaz se muestra siempre en modo oscuro (clase `dark` en `App.tsx:46`).
-- No hay filtros, navegación ni interacción, salvo los *tooltips* de las gráficas.
+- No hay filtros, navegación ni interacción, salvo los *tooltips* de las gráficas. Las gráficas también se pueden recorrer con el teclado: Tab para entrar y flechas para moverse entre meses (capa de accesibilidad de Recharts).
+- **Accesibilidad** (skill `accessibility`, ver [`progress.md`](progress.md)):
+  - el título de la pestaña es "Financial Overview · Executive metrics dashboard";
+  - cada gráfica tiene nombre (`aria-label`), una tabla de datos oculta a la vista (`sr-only`) para los lectores de pantalla y un tooltip que se anuncia;
+  - la línea de gastos es discontinua, para no depender solo del color;
+  - el fin de la carga y el error se anuncian (`role="status"` y `role="alert"`).
 
 Valores mostrados el 2026-11-13: income $1,258,147 · outcome $762,132 · profit $496,015 · margin 39.4%. Cambian si cambia la fecha (ver "Datos" más abajo).
 

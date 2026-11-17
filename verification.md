@@ -285,3 +285,47 @@ Encontró estos problemas, todos comprobados antes de corregirlos:
 | Fila "Arranque": `up --build` en la tabla y `up -d` en el texto | Las imágenes ya estaban construidas, así que se usó `up -d` | Poco clara | Se indican los dos comandos |
 
 **No verificable sin conexión** por el revisor: el número de instalaciones, la versión del CLI y el `diff -r` con los repos de origen. Los comprobó el agente principal durante la instalación.
+
+---
+
+## Skills · Fase 2: Aplicar la skill `accessibility`
+
+**Fecha:** 2026-11-16/17. Plan: [`plans/phase-2-accessibility.md`](plans/phase-2-accessibility.md). El detalle de los cambios está en [`memory-bank/progress.md`](memory-bank/progress.md) (Fase 2).
+
+### Comprobaciones ejecutadas
+
+| Comprobación | Resultado |
+|---|---|
+| Lighthouse Accessibility (Snapshot, Mobile) antes y después | ✅ 100 → 100. Fallan 0 → 0, pasan 20 → 23 (las 3 nuevas validan la tabla) |
+| TE-01 tras los cambios | ✅ pytest 15 · vitest 6 · lint OK · build OK. Sin advertencias nuevas (JS de 585,86 kB) |
+| Árbol de accesibilidad, teclado y foco en el navegador | ✅ Gráficas con nombre, `h2`, tablas, `status` y tooltip anunciado. Foco sólido (4,6:1) |
+| Estado de error (backend parado un momento) | ✅ `role="alert"` con el mensaje. El backend se volvió a arrancar (`/health` → ok) |
+| Contraste (16 pares `.dark`, calculado en el navegador) | ✅ Todos pasan salvo el anillo de foco al 50 % (2,02:1), que se corrigió en A7 |
+
+### Correcciones (afirmación incorrecta → corrección)
+
+- **"Lighthouse en modo Navigation no puede auditar la app (`NO_FCP`)"** → La app pinta en 0,1 s con la pestaña en primer plano; con la pestaña oculta, Chrome retrasa el pintado (9,9 s medidos). Se usó el modo Snapshot, que la skill admite.
+- **"`title` en `<LineChart>` da nombre a la gráfica" (A2)** → Chrome no tomaba el `<title>` del SVG como nombre del `role="application"`: el árbol seguía mostrando `application` sin nombre. Se cambió por `aria-label`, y ahora sí lo muestra.
+- **"`sr-only` en la `<table>` la reduce a 1 px" (A3)** → Las tablas no respetan el `width`/`height` de `sr-only`: la caja medía 221×336 px, aunque no se veía (`clip-path`). Se envolvió en un `div.sr-only`, que mide 1×1 px.
+
+### Revisión independiente del diff
+
+Un **agente nuevo, sin contexto**, revisó el diff contra la skill y contra `.agents/rules/frontend.md`, y volvió a ejecutar build, lint y tests. Confirmó como correctos:
+- `sr-only` y `motion-safe:` en Tailwind 4, con el CSS generado comprobado;
+- el `aria-label` en el SVG (Recharts lo deja pasar);
+- la leyenda discontinua;
+- que el cambio de foco solo afecta al `outline-color` y da 4,68:1;
+- los `h2`, la tabla y el `role="alert"`;
+- y FE-01/02/03/04/06/07/08.
+
+Encontró estos problemas, todos comprobados antes de decidir:
+
+| # | Afirmación o cambio | Realidad | Gravedad | Decisión |
+|---|---|---|---|---|
+| R1 | `role="status"` con "Loading financial data…" anuncia la carga | El texto ya estaba al crear la región, y los lectores de pantalla solo anuncian **cambios**. Después se vaciaba, así que en la práctica no anunciaba nada (patrón de *live regions* de la skill) | Debe corregirse | La región empieza vacía y dice "Financial data loaded." |
+| R2 | El `desc` dice "use las flechas" | Al usarlas no se anunciaba nada: el tooltip de Recharts por defecto tiene `role="status"` (`DefaultTooltipContent.js:133-136`), pero los `CustomTooltip` no | Debe corregirse | `role="status" aria-live="polite"` en los dos tooltips |
+| R3 | `aria-busy` en las secciones | No aparece en la skill (`grep` sin resultados) y no aportaba nada | Detalle | Quitado |
+| R4 | `motion-safe:animate-pulse` | Es válido, pero el parpadeo es de opacidad y no de movimiento | Detalle | Se mantiene, justificado por la sección "Motion (2.3)" de la skill |
+| R5 | Hijos de `<>` sin sangrar | Decisión deliberada por FE-04 | Detalle | Sin cambios |
+| R6 | Iconos de la leyenda | Recharts les pone `aria-label="income legend icon"` (`DefaultLegendContent.js:133`) | Detalle | Limitación aceptada |
+| R7 | Etiqueta y valor de cada KPI | Sin relación programática (1.3.1) | Detalle | `<dl>/<dt>/<dd>` aplicado, con el mismo aspecto |

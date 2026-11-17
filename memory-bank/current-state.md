@@ -1,7 +1,7 @@
 ---
 name: current-state
 description: Qué funciona hoy, carencias conocidas y siguientes prioridades técnicas
-last_verified: 2026-11-13 (sobre el commit 57d00da y la traducción del mensaje de error)
+last_verified: 2026-11-17 (sobre el commit 8c44273 y los cambios de accesibilidad de la Fase 2 de skills)
 ---
 
 # Estado actual
@@ -22,6 +22,7 @@ last_verified: 2026-11-13 (sobre el commit 57d00da y la traducción del mensaje 
 | `npm run lint` | ✅ Sin errores |
 | `npm run build` | ✅ Correcto (1 aviso de tamaño, ver carencias) |
 | Agrupación mensual en `America/New_York` | ✅ 12 meses (corregido en `94b6fd1`) |
+| Accesibilidad (2026-11-17) | ✅ Lighthouse Accessibility 100 (en modo Snapshot, antes y después), más la revisión manual de la skill `accessibility`: teclado, foco con 4,6:1, gráficas con nombre y tabla de datos, y anuncios de estado. Ver [`progress.md`](progress.md) |
 
 ## Historial reciente
 
@@ -37,7 +38,9 @@ last_verified: 2026-11-13 (sobre el commit 57d00da y la traducción del mensaje 
 | `1b46bed` | Reglas refinadas tras validarlas con tareas reales (Fase 3) |
 | `290c865` | Memory bank (Fase 4) |
 | `57d00da` | **docs:** entregables del proyecto en los dos README |
-| — | **fix:** mensaje de error de la interfaz traducido al inglés (N6) |
+| `8022d3e` | **fix:** mensaje de error de la interfaz traducido al inglés (N6) |
+| `8c44273` | **chore:** skills `accessibility` y `vercel-react-best-practices` en `.agents/skills/` |
+| — | **fix:** accesibilidad del dashboard con la skill `accessibility` |
 
 El detalle de cada verificación está en [`verification.md`](../verification.md), y el análisis de hallazgos en [`engineering-findings.md`](../engineering-findings.md).
 
@@ -57,8 +60,8 @@ Todas comprobadas en el código. El ID es el del hallazgo en `engineering-findin
 | `pytest` muestra `StarletteDeprecationWarning` (httpx con `TestClient`). Fijar versiones lo congela pero no lo elimina | Salida de `pytest` | E2 |
 | El frontend instala con `npm install` en lugar de `npm ci`, y las imágenes base no fijan la versión de parche | `frontend/Dockerfile:6`, `FROM python:3.13-slim` / `node:24-alpine` | E2 |
 | debugpy siempre activo y CORS `*` con credenciales | `backend/Dockerfile`, `main.py` | E3 |
-| El build avisa de un bundle JS de 584 kB (más de 500 kB) | Salida de `npm run build` | — |
-| La fuente `Inter` se declara pero no se carga, y el `<title>` de la página es "frontend" | `index.css:79`, `index.html` | — |
+| El build avisa de un bundle JS de 586 kB (más de 500 kB) | Salida de `npm run build` | — |
+| La fuente `Inter` se declara pero no se carga | `index.css:79` | — |
 | No hay tests de componentes React, solo de `lib/` | No hay testing-library | — |
 | TypeScript sin modo `strict`: `any` implícito y errores de `null` compilan | `tsconfig.app.json` | — |
 

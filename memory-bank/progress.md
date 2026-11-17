@@ -1,7 +1,7 @@
 ---
 name: progress
 description: Progreso del proyecto de skills de agentes — skills aplicadas, cambios verificados, skill del ecosistema elegida y skill interna
-last_verified: 2026-11-16 (sobre el commit 8022d3e y la instalación de la Fase 1)
+last_verified: 2026-11-17 (sobre el commit 8c44273 y los cambios de la Fase 2)
 ---
 
 # Progreso: mejora del dashboard con skills de agentes
@@ -112,3 +112,80 @@ Sigue WCAG 2.2 con un método basado en pruebas:
 | ❌ | `async-parallel` y `async-dependencies` | Solo hay una petición (`GET /api/metrics` en `App.tsx`) |
 | ❓ | `client-swr-dedup` | Añadiría la dependencia SWR para una sola petición. Propuesta: no aplicarla |
 | ❓ | `bundle-barrel-imports` en `lucide-react` | La solución que recomienda es de Next (`optimizePackageImports`). En Vite el build de producción ya descarta los iconos que no se usan. Se medirá en la Fase 3 antes de proponer nada |
+
+## Fase 2: Aplicar la skill `accessibility`
+
+**Fecha:** 2026-11-16/17. Plan: [`plans/phase-2-accessibility.md`](../plans/phase-2-accessibility.md). Skill: [`.agents/skills/accessibility/`](../.agents/skills/accessibility/).
+
+### Método (el de la skill)
+
+1. **Auditoría automática:** Lighthouse Accessibility desde las DevTools de Chrome, en modo **Snapshot** y Mobile.
+   - El modo Navigation falló dos veces con `NO_FCP`: Chrome no pinta las pestañas que considera ocultas mientras Lighthouse las recarga. Se comprobó que la app pinta en 0,1 s con la pestaña en primer plano.
+   - Los JSON se guardaron fuera del repo.
+2. **Revisión manual en el navegador:**
+   - árbol de accesibilidad;
+   - teclado: Tab, Shift+Tab y flechas en las gráficas;
+   - reflow a 320 px (iframe);
+   - contraste de 16 pares de colores `.dark`, calculado en el navegador.
+3. **Revisión del código** de `index.html`, `App.tsx`, `components/dashboard/*` y `components/ui/*` con la lista de la skill.
+4. **Corregir, y repetir** la misma auditoría y las mismas pruebas manuales.
+
+### Lighthouse antes y después
+
+| | Antes | Después |
+|---|---|---|
+| Puntuación | 100 | 100 |
+| Pasan / no aplican / manuales / fallan | 20 / 46 / 10 / 0 | 23 / 43 / 10 / 0 |
+
+Las 3 que pasan de más son las de tablas (`td-has-header`, `td-headers-attr` y `table-fake-caption`): validan la tabla nueva. Como dice la skill, un 100 no es conformidad con WCAG. **Ninguno de los problemas corregidos lo detectaba Lighthouse.** `document-title`, por ejemplo, pasaba con el título "frontend", porque solo comprueba que exista.
+
+### Cambios aplicados (todos aprobados por el usuario antes de aplicarse)
+
+| # | Archivo | Problema | Instrucción de la skill | Cambio |
+|---|---|---|---|---|
+| A1 | `index.html` | El título de la pestaña era "frontend" | 2.4.2 Page Titled | `Financial Overview · Executive metrics dashboard` |
+| A2 | `income-outcome-chart.tsx`, `profit-percent-chart.tsx` | Las gráficas eran `role="application"` sin nombre | 4.1.2 Name, Role, Value | `aria-label` y `desc` en `<LineChart>` |
+| A3 | `chart-data-table.tsx` (nuevo) y las 2 gráficas | Con lector de pantalla no se llegaba a los datos | 1.1.1 alternativa textual de una imagen compleja | Tabla `sr-only` con `<caption>` y `th` de fila y de columna, envuelta en un `div.sr-only` |
+| A4 | `App.tsx` | El error no se anunciaba | 4.1.3 Status messages | `role="alert"` |
+| A5 / R1 | `App.tsx` | El estado de los datos no se anunciaba | 4.1.3 y patrón de *live regions* | `<p role="status" className="sr-only">`, que empieza vacío y dice "Financial data loaded." |
+| A6 | `ui/skeleton.tsx` | `animate-pulse` ignoraba el movimiento reducido | 2.3 Motion (`prefers-reduced-motion`) | `motion-safe:animate-pulse` |
+| A7 | `index.css` | El anillo de foco al 50 % daba 2,02:1 | 1.4.11 (el foco también necesita contraste) y 2.4.7 | `outline-ring/50` → `outline-ring` (4,6:1) |
+| A8 | Las 2 gráficas | Los títulos no eran encabezados | 1.3.1 y "Missing heading structure" | `<h2>` dentro de `CardTitle`, con el mismo aspecto |
+| A9 | `income-outcome-chart.tsx` | Ingresos y gastos solo se distinguían por el color (las dos líneas tienen 1,19:1 entre sí) | 1.4.1 Use of Color | Línea de gastos discontinua y leyenda `plainline` |
+| R2 | Los 2 `CustomTooltip` | Al recorrer con las flechas no se anunciaba nada. El tooltip de Recharts por defecto sí lo hace (`role="status"`) | 4.1.3 | `role="status" aria-live="polite"` |
+| R7 | `kpi-card.tsx` | La etiqueta y el valor de cada KPI no estaban relacionados | 1.3.1 Info and Relationships | `<dl>`, con `<dt>` (etiqueta) y `<dd>` (valor y ayuda) |
+
+### Descartado o aceptado como está
+
+| Punto | Motivo |
+|---|---|
+| Skip link (2.4.1) | No hay navegación repetida que saltar. Lighthouse marca `bypass` como "no aplica" |
+| Tamaño de los objetivos, formularios, modales y pestañas | No existen en la app |
+| `aria-busy` en las secciones | Se añadió y después se quitó (R3): no sale de ninguna instrucción de la skill y no aportaba nada |
+| Nombre "income legend icon" de los iconos de la leyenda (R6) | Lo pone Recharts. Cambiarlo exige una leyenda hecha a mano, y los datos ya están en la tabla. Limitación menor aceptada |
+| Hijos de `<>…</>` sin sangrar en las gráficas (R5) | FE-04: no reformatear líneas que no cambian |
+| Etiqueta "2024 - Full Year" | No es de accesibilidad: es la regla FE-10, fuera del alcance de esta skill |
+
+### Ya correcto antes de empezar (comprobado)
+
+- **Contraste:** el texto, entre 5,15 y 16,98:1; las líneas de las gráficas, entre 5,12 y 6,34:1; los iconos, más de 4,5:1.
+- **Iconos decorativos:** `lucide-react` ya les pone `aria-hidden`.
+- **Animaciones de Recharts:** respetan el movimiento reducido (`isAnimationActive: 'auto'`).
+- **Estructura:** `lang="en"`, `<main>`, `<header>` y `h1`.
+- **Reflow:** sin scroll horizontal a 320 px.
+- **Teclado:** sin trampa de foco.
+
+### Verificación final
+
+- **TE-01:**
+  - pytest: 15 passed (el aviso de `httpx` ya existía);
+  - vitest: 6 passed;
+  - lint: limpio;
+  - build: OK, sin advertencias nuevas. Sigue solo la de >500 kB, con el JS en 585,86 kB (+1,7 kB).
+- **En el navegador:**
+  - el árbol muestra `status "Financial data loaded."`, los `h2`, las gráficas con nombre y las 2 tablas de 12 meses;
+  - el tooltip se anuncia al usar las flechas;
+  - el foco se ve sólido;
+  - las KPI se ven igual que antes.
+- **Error:** con el backend parado se muestra `role="alert"`.
+- **No comprobado:** el `motion-safe` con "Reducir movimiento" activado en el sistema no se pudo simular desde la extensión. Está comprobado en el código y en el CSS generado (`@media (prefers-reduced-motion: no-preference)`).

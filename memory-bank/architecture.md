@@ -1,7 +1,7 @@
 ---
 name: architecture
 description: Cómo fluyen los datos, dónde vive cada responsabilidad y qué partes están acopladas
-last_verified: 2026-11-13 (sobre el commit 1b46bed y los cambios de la Fase 4)
+last_verified: 2026-11-17 (sobre el commit 8c44273 y los cambios de accesibilidad de la Fase 2 de skills)
 ---
 
 # Arquitectura
@@ -48,7 +48,7 @@ Dentro de `routes.py`:
 |---|---|
 | [`main.tsx`](../frontend/src/main.tsx) | Monta `<App />` |
 | [`App.tsx`](../frontend/src/App.tsx) | Pide los datos, gestiona `loading` y `error`, calcula KPIs y serie mensual, y compone la página |
-| `components/dashboard/` | Componentes de negocio: cabecera, fila y tarjeta de KPI, y las 2 gráficas |
+| `components/dashboard/` | Componentes de negocio: cabecera, fila y tarjeta de KPI, las 2 gráficas y `chart-data-table.tsx` (tabla `sr-only` con los datos de cada gráfica, como alternativa textual) |
 | `components/ui/` | Primitivas de shadcn/ui (`card`, `skeleton`) |
 | `lib/financial-types.ts` | Tipos del contrato (`FinancialMovement`…) y de la vista (`KPIMetrics`, `MonthlyDataPoint`) |
 | `lib/financial-utils.ts` | Funciones puras: `computeKPIs`, `computeMonthlyData`, `formatCurrency` (USD) y `formatPercent` |
