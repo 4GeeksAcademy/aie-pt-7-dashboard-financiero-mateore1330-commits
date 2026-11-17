@@ -32,7 +32,7 @@ Informa del resultado de cada comando. Si alguno falla, la tarea no está termin
 
 **❌ Evita:** ejecutar solo los tests del lado que has cambiado, o dar por bueno un cambio porque pasa el lint. Un cambio en el contrato de datos rompe el otro lado (BE-03).
 
-**Cómo comprobarlo:** el resumen final de la tarea incluye el resultado de los cuatro comandos. El aviso `StarletteDeprecationWarning` de pytest y el aviso de tamaño de chunk del build ya existían y no cuentan como fallo.
+**Cómo comprobarlo:** el resumen final de la tarea incluye el resultado de los cuatro comandos. El aviso `StarletteDeprecationWarning` de pytest ya existía y no cuenta como fallo. El build no tiene avisos desde `35a50a5` (las gráficas se cargan en diferido), así que cualquier aviso del build es nuevo.
 
 ## TE-02 · Estilo de los tests del backend
 

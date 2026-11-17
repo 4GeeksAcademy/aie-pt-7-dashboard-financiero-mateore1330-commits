@@ -415,3 +415,64 @@ Un **agente nuevo, sin contexto**, revisó el diff contra las dos skills y las r
 | R4 | `robots.txt` no cubre el backend en `:8000` ni lleva `Sitemap:` | ✅ | Detalle | Anotado, fuera de alcance |
 | R5 | El plan no recoge `robots.txt` | ✅ | Detalle | Añadido al plan |
 | R6/R7 | Falta la documentación de la fase y el memory-bank | ✅ | Paso pendiente | `progress.md`, `verification.md`, `current-state.md` y `architecture.md` actualizados |
+
+## Skills · Fase 5: Skill interna `pre-merge-qa`
+
+**Fecha:** 2026-11-17. Plan: [`plans/phase-5-internal-skill.md`](plans/phase-5-internal-skill.md). El detalle está en [`memory-bank/progress.md`](memory-bank/progress.md) (Fase 5).
+
+### Comprobaciones ejecutadas
+
+| Comprobación | Resultado |
+|---|---|
+| `npx skills find` (`pre-merge`, `api contract`, `shadcn`) | Nada específico de este repo; solo `shadcn` (oficial) cubre en parte la UI |
+| Cada comando de la skill, ejecutado antes de guardarla | ✅ Todos funcionan |
+| `fingerprint.py` en 4 casos | ✅ Sin cambios: iguales · campo nuevo: cambian `openapi` y `contract` · llamada extra a `random`: solo `mock` · `HEAD` frente a `main`: iguales |
+| Prueba 1 con un agente nuevo | 0 comandos fallidos · 3 ❌ reales en la rama · 13 problemas de la skill |
+| Prueba 2 con otro agente nuevo | 0 comandos fallidos · 1 ❌ real en la rama · 10 problemas de la skill |
+
+### Correcciones (afirmación incorrecta → corrección)
+
+**Antes de la primera prueba:**
+- **"Sin `-T`, `exec` falla si no hay terminal"** → Probado: en esta versión de Docker funciona igual. Se quitó la afirmación.
+- **`grep -vE "==\|^#\|^$"` dentro de la tabla** → Al copiarlo tal cual, buscaba un `|` literal. Cambiado por `grep -v -e "==" -e "^#" -e "^$"`.
+
+**Tras la prueba 1:**
+
+| # | Problema | Corrección |
+|---|---|---|
+| M1 | Solo había ✅, ❌ o N/A | Nuevo estado ⚠️ (justificado o aceptado por el usuario), que no bloquea |
+| M2 | No decía qué hacer con ❌ en commits ya subidos | No reescribir: dar las dos opciones al usuario |
+| M3 | BE-02, BE-03 y BE-05 sin comando ("a ojo") | `fingerprint.py`, con 3 huellas |
+| M4 | Los tests sin comando | `grep -cE` de aserciones quitadas, que debe dar 0 |
+| M5 | UR-03 a nivel de rama, pero la regla exige "en el mismo commit" | Comprobación commit a commit con `git log --name-only` |
+| M6 | El comando de cuerpos no decía de qué commit era cada línea | Imprime el hash |
+| M7 | GD-02 confundía el README de una skill de terceros | Solo los README de la raíz |
+| M8 | `index.html` y `public/` no tenían fila | Fila con FE-07 |
+| M9 | "Sin cambiar ningún archivo" era imposible (`dist/`, cachés) | "Ningún archivo versionado" |
+| M10 | Aviso de Starlette atribuido a E2 | "Conocido (ver TE-01)" |
+
+Al probar los comandos de M1-M10 aparecieron dos fallos más: el de la longitud del asunto dependía de la longitud del hash (ahora usa un tabulador) y el de los encabezados de GD-02 contaba las líneas vacías (ahora `grep -oE "^#+"`).
+
+**Tras la prueba 2:**
+
+| # | Problema | Corrección |
+|---|---|---|
+| N1 | **La huella "de HEAD" leía el archivo en disco** | `git show HEAD:backend/app/routes.py` |
+| N2 | UR-03 no comprobaba `last_verified` ni aclaraba si un resultado de Lighthouse cuenta | Comando para `last_verified` y aclaración (cuenta para `current-state.md`) |
+| N3 | `git log --stat` daba más de 100 líneas por las skills de terceros | Excluye `.agents/skills` (59 líneas) |
+| N4 | El comando de cuerpos podía confundir una línea con un hash y no mostraba la línea | Marcador `--- %h`; imprime hash, longitud e inicio de la línea |
+| N5 | El paso 1 sin criterio, y N/A o ✅ sin definir | Paso 1: ✅, o ⚠️ con cambios sin commitear. N/A puede llevar evidencia |
+| N6 | ¿Pueden ir `memory-bank/`, `plans/` y `verification.md` en un `feat`/`fix`? | Sí, lo pide UR-03 |
+
+**No cambiado:** la carpeta `.skills/`, que es la que pide el enunciado (los enlaces funcionan desde ahí), y la revisión de FE-01 a FE-10, que es de criterio y remite al "Cómo comprobarlo" de cada regla.
+
+### Hallazgos reales en la rama, aceptados como excepción por el usuario
+
+| Regla | Commit | Problema |
+|---|---|---|
+| GD-01 | `35a50a5` | Asunto de 84 caracteres (máximo 72) |
+| GD-01 | `4cd1088`, `35a50a5`, `8adab72`, `662e7f3` | Cuerpo en una sola línea de 239-308 caracteres |
+| GD-01 | `8adab72`, `662e7f3` | La skill se instaló dentro de su `feat`/`refactor`, no en un `chore` aparte |
+| UR-03 | `8adab72` | El resultado de Lighthouse SEO se anotó en `current-state.md` en el commit siguiente |
+
+Ya estaban subidos, así que no se reescribe la historia. Los commits de esta fase en adelante cumplen GD-01 (cuerpo a 72) y UR-03.

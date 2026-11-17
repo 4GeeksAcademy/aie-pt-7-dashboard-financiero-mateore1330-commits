@@ -1,7 +1,7 @@
 ---
 name: progress
 description: Progreso del proyecto de skills de agentes — skills aplicadas, cambios verificados, skill del ecosistema elegida y skill interna
-last_verified: 2026-11-17 (sobre el commit 35a50a5 y los cambios de la Fase 4 de skills)
+last_verified: 2026-11-17 (sobre el commit 662e7f3 y los cambios de la Fase 5 de skills)
 ---
 
 # Progreso: mejora del dashboard con skills de agentes
@@ -357,3 +357,53 @@ Lighthouse SEO de antes (modo Snapshot, Mobile): **60/100**.
 **El 100 es en modo Snapshot.** La auditoría `is-crawlable` solo corre en modo Navigation, y ahí fallaría **a propósito** por el `noindex`.
 
 **Referencias de línea.** El cambio de `routes.py` sustituye líneas una por una, así que no se ha movido ninguna referencia. El revisor las comprobó todas.
+
+## Fase 5: Skill interna `pre-merge-qa`
+
+**Fecha:** 2026-11-17. Plan: [`plans/phase-5-internal-skill.md`](../plans/phase-5-internal-skill.md). Skill: [`.skills/pre-merge-qa/SKILL.md`](../.skills/pre-merge-qa/SKILL.md) y su archivo de apoyo [`fingerprint.py`](../.skills/pre-merge-qa/fingerprint.py).
+
+### El hueco
+
+| Candidata | Evidencia en el repo | Lo que ya existe | Decisión |
+|---|---|---|---|
+| **Checks de QA antes del merge** | No hay CI, ni `.github/`, ni pre-commit (T4). Todo se ejecuta dentro de Docker porque el `node_modules` del host está vacío. Los checks están repartidos en 6 reglas (TE-01, TE-04, UR-03, GD-01, GD-02, BE-02) y ninguna dice el orden ni el formato del informe | `npx skills find pre-merge`: listas genéricas (348 instalaciones la que más) que no conocen Docker, TE-04 ni el memory-bank | **Elegida** |
+| Añadir un campo sin romper el contrato | Contrato duplicado entre `routes.py` y `financial-types.ts` (D1) | Ya lo cubren BE-01, BE-02, BE-03 y BE-05; `api-contract-testing` (933) habla de OpenAPI/Pact | En esta rama no hay ninguna tarea real con la que probarla |
+| Convenciones de UI | FE-01 a FE-10 | Las reglas FE y la skill oficial `shadcn-ui/ui@shadcn` | Aportaría poco |
+
+### La skill
+
+- **Objetivo:** comprobar que una rama cumple `.agents/rules/` antes del PR. Solo informa: no corrige ni fusiona.
+- **Inputs:** la rama base (`main` por defecto) y los servicios levantados.
+- **Pasos:**
+  1. alcance del cambio (`git diff --name-only`, `git status`);
+  2. servicios (EN-01);
+  3. los cuatro comandos de TE-01 dentro de Docker;
+  4. una tabla que relaciona cada tipo de archivo cambiado con su regla y su comando;
+  5. commits (GD-01).
+- **`fingerprint.py`:** saca 3 huellas de `routes.py`, de la base y de `HEAD`: API pública (BE-02), esquema de `FinancialMovement` (BE-03) y datos mock (BE-05). Probado: no cambia nada si el código es igual, cambian `openapi` y `contract` al añadir un campo, y solo `mock` al añadir una llamada a `random`.
+- **Output:** un informe en tabla (check · regla · ✅/⚠️/❌/N/A · evidencia), el veredicto, qué corregir y los avisos.
+- **Criterios de aceptación:** todos los checks tienen resultado, cada ✅ lleva evidencia real, "listo para PR" solo sin ❌, y no se modifica ningún archivo versionado.
+- No copia las reglas: las enlaza.
+
+### Pruebas con una tarea real: la QA de esta rama antes del PR
+
+Dos agentes nuevos, sin contexto, cargaron solo la skill y la aplicaron a `feature/agent-skills` contra `main`.
+
+| | Prueba 1 (borrador) | Prueba 2 (corregida) |
+|---|---|---|
+| Comandos de la skill que fallaron | 0 | 0 |
+| Checks | 19 | 29 |
+| ❌ | 3 (GD-01) | 1 (UR-03) |
+| Problemas de la skill que encontró | 13 | 10 |
+
+**Lo que encontró en la rama (problemas reales, no de la skill):**
+- **GD-01:** el asunto de `35a50a5` tiene 84 caracteres; los cuerpos de `4cd1088`, `35a50a5`, `8adab72` y `662e7f3` no están cortados a 72; y las skills `seo` y `fastapi` se instalaron dentro de su `feat`/`refactor`.
+- **UR-03:** `8adab72` cambió el resultado de Lighthouse SEO, pero `current-state.md` se actualizó en el commit siguiente.
+
+**Decisión del usuario:** los commits ya están subidos, así que se aceptan como **excepción documentada**, sin reescribir la historia, y pasan a ⚠️. Desde esta fase, los commits cumplen GD-01 y UR-03.
+
+**Lo que se corrigió en la skill tras las pruebas** está en [`verification.md`](../verification.md) (Skills · Fase 5).
+
+### Cambio en una regla (aprobado por el usuario)
+
+[TE-01](../.agents/rules/testing.md) decía que el build tenía un aviso de tamaño de chunk "que ya existía". Desde `35a50a5` no lo tiene, así que ahora dice que cualquier aviso del build es nuevo. La primera prueba lo detectó como una contradicción entre la skill y la regla.

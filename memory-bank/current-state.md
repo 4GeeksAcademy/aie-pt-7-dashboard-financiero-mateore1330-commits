@@ -1,7 +1,7 @@
 ---
 name: current-state
 description: Qué funciona hoy, carencias conocidas y siguientes prioridades técnicas
-last_verified: 2026-11-17 (sobre el commit 35a50a5 y los cambios de la Fase 4 de skills)
+last_verified: 2026-11-17 (sobre el commit 662e7f3 y los cambios de la Fase 5 de skills)
 ---
 
 # Estado actual
@@ -43,8 +43,9 @@ last_verified: 2026-11-17 (sobre el commit 35a50a5 y los cambios de la Fase 4 de
 | `8c44273` | **chore:** skills `accessibility` y `vercel-react-best-practices` en `.agents/skills/` |
 | `4cd1088` | **fix:** accesibilidad del dashboard con la skill `accessibility` |
 | `35a50a5` | **fix:** gráficas con carga diferida y *skeletons* sin salto, con la skill `vercel-react-best-practices` |
-| — | **feat:** meta description, `noindex` y `robots.txt`, con la skill `seo` |
-| — | **refactor:** parámetros de los endpoints con `Annotated` y sin `Query(...)`, con la skill `fastapi` |
+| `8adab72` | **feat:** meta description, `noindex` y `robots.txt`, con la skill `seo` |
+| `662e7f3` | **refactor:** parámetros de los endpoints con `Annotated` y sin `Query(...)`, con la skill `fastapi` |
+| — | **docs:** skill interna `pre-merge-qa` en `.skills/` (checks de QA antes del merge) y TE-01 al día (el build ya no tiene avisos) |
 
 El detalle de cada verificación está en [`verification.md`](../verification.md), y el análisis de hallazgos en [`engineering-findings.md`](../engineering-findings.md).
 
