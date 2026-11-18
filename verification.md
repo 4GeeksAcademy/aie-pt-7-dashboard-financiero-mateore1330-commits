@@ -244,3 +244,205 @@ El auditor también señaló **información que faltaba**, y se añadió:
 - Los datos se regeneran en cada petición.
 - Las claves de periodo de `/summary`.
 - El valor por defecto de `/categories/top`.
+
+---
+
+# Proyecto de especificaciones (rama `feat/frontend-specs`)
+
+## Specs · Fase 1: Explorar la API
+
+Entregable: [`frontend/specs/api-exploration.md`](frontend/specs/api-exploration.md). Plan: [`frontend/specs/plans/phase-1-api-exploration.md`](frontend/specs/plans/phase-1-api-exploration.md).
+
+### Fuentes de evidencia
+
+- Contrato OpenAPI 3.1.0 en vivo (`http://localhost:8000/docs` y `/openapi.json`) sobre el commit `8022d3e`.
+- Unas 40 peticiones `curl` a la API en marcha (casos límite de fechas, `threshold`, `limit`, `business_type` y errores 422).
+- Recálculo de `baseline_average` con los datos de `/api/metrics/summary`.
+- Lectura de `backend/app/routes.py` y de `frontend/src`.
+
+### Suposiciones del brief que resultaron incorrectas (❌)
+
+| Suposición | Evidencia | Cómo lo resuelve la spec |
+|---|---|---|
+| Existen `AlertsResponse` y `TopCategoriesResponse` como objetos de respuesta | `/alerts` y `/categories/top` devuelven **listas sin envolver** | Serán alias de `AlertEntry[]` y `CategoryEntry[]` |
+| La media de la tabla de anomalías es la de los 3 períodos anteriores | `baseline_average` es la media de **todos** los períodos anteriores del rango (p. ej. `2026-03`: 55334.29 frente a 59977.58 con 3 períodos) | Se usa `/alerts` tal cual y se documenta el desajuste como pregunta abierta para el PM (decisión del usuario) |
+| El umbral va de 0.01 a 1.0 | La API acepta cualquier valor `≥ 0`, sin máximo | El frontend aplica el rango del PM |
+| `increase_ratio` es un "incremento porcentual" | Es un ratio: `1.4968` = +149,68 % | Se muestra multiplicado por 100 |
+| Las categorías de cada grupo salen de `facets` | `facets` no tiene parámetros y no separa por B2B/B2C | Las categorías de cada panel salen de `/categories/top` |
+| Habrá un "top 5" de ingresos | Los ingresos solo usan `sales` y `others`: como mucho 2 filas | Se muestran las filas que lleguen |
+| Un input de fecha vacío equivale a "sin filtro" | `start_date=` da **422** | El parámetro vacío se omite |
+| Una fecha de inicio posterior a la de fin da error | La API devuelve `[]` con 200 | El frontend lo valida antes de pedir |
+| Hay un router para la "nueva página" | No hay ninguna dependencia de router | Pestañas con estado de React (decisión del usuario) |
+
+### Revisión independiente (agente sin contexto)
+
+Comprobó unas 62 afirmaciones correctas y encontró 9 puntos. Se verificaron uno a uno (con `curl` o leyendo el código) antes de corregirlos:
+
+| Afirmación | Realidad | Tipo | Corrección |
+|---|---|---|---|
+| Comparación estricta en `routes.py:229` | Está en `routes.py:230` (la 229 calcula el ratio) | ❌ Incorrecta | Referencia corregida |
+| Orden y redondeo del top en `routes.py:203` | `sorted` en `:200`, `round` en `:205` | Imprecisa | `routes.py:200-205` |
+| `HTTPValidationError { detail: ... }` | `detail` no es `required` en el contrato | Imprecisa | `detail?`, con la nota de que siempre llega |
+| "Solo acepta `YYYY-MM-DD`" | `2026-03-01T00:00:00` → 200; `T10:00:00` → 422 `date_from_datetime_inexact` | Imprecisa | Dos filas nuevas en la tabla de fechas |
+| "Un rango de un solo mes da siempre `[]`" | Solo dentro de un mes natural. `2026-03-15` → `2026-04-15` da una alerta comparando dos medios meses | Imprecisa | Matizado, y aviso de meses parciales en F2-6 |
+| (Faltaba) Parámetros desconocidos | `/api/metrics?business_type=B2B` → 200 con los 360 movimientos | Omisión | Subsección nueva |
+| (Faltaba) Parámetros repetidos | Gana el último valor, sin error | Omisión | Subsección nueva |
+| (Faltaba) Detalles de la media | No se evalúa si es ≤ 0 (`:228`), usa importes redondeados (`:183`) y cambia con `business_type` | Omisión | Añadidos |
+| (Faltaba) `threshold=0` | Es válido en la API (`ge=0`) | Omisión | F2-4 aclara que el mínimo 0.01 es solo del frontend |
+
+## Specs · Fase 2: Tipos TypeScript
+
+Entregables: [`frontend/specs/api-types.ts`](frontend/specs/api-types.ts), [`frontend/specs/param-types.ts`](frontend/specs/param-types.ts) y [`frontend/specs/tsconfig.json`](frontend/specs/tsconfig.json). Plan: [`frontend/specs/plans/phase-2-typescript-types.md`](frontend/specs/plans/phase-2-typescript-types.md).
+
+### Suposiciones que resultaron incorrectas (❌)
+
+| Suposición | Evidencia | Corrección |
+|---|---|---|
+| "`npx tsc --noEmit` en `frontend/` comprueba los tipos" | `--listFilesOnly` devuelve **0 archivos**: el `tsconfig.json` raíz tiene `"files": []` y solo delega con `-b`; además, `tsconfig.app.json` solo incluye `src` y no tiene `strict` | `frontend/specs/tsconfig.json` propio, con `strict: true`. Se comprobó que detecta un `any` implícito (TS7006) y un tipo incorrecto (TS2322) en un archivo de prueba, que después se borró |
+| "`tsc` también detecta el uso de `object`" | `object` es un tipo válido para el compilador | Comprobación aparte, buscando en el texto: 0 apariciones de `any`/`object` como tipo |
+| `TopCategoriesParams` solo necesita tipo de operación, `limit` y fechas (enunciado) | Sin `business_type`, `/categories/top` mezcla B2B y B2C (Fase 1, F3-3) | Se añade `business_type` (decisión del usuario), explicado en su JSDoc |
+
+### Comparación automática con `/openapi.json`
+
+Un script usa el compilador de TypeScript para leer los tipos y los compara con el contrato en vivo: nombre, tipo, enum, si es opcional, si admite `null` y que tenga JSDoc. El script no se guarda en el repositorio. Resultado: **28/28 propiedades coinciden**.
+
+| Tipo TS | Fuente en /docs | Propiedad | Tipo en TS | En /docs | Resultado |
+|---|---|---|---|---|---|
+| FacetsResponse | MetricsFacets | operation_types | income\|outcome[] | income\|outcome[] | ✅ |
+| FacetsResponse | MetricsFacets | business_types | B2B\|B2C[] | B2B\|B2C[] | ✅ |
+| FacetsResponse | MetricsFacets | categories | administrative\|operational\|others\|sales\|suppliers[] | administrative\|operational\|others\|sales\|suppliers[] | ✅ |
+| FacetsResponse | MetricsFacets | min_date | string | string (date) | ✅ |
+| FacetsResponse | MetricsFacets | max_date | string | string (date) | ✅ |
+| AlertEntry | MetricsAlert | period | string | string | ✅ |
+| AlertEntry | MetricsAlert | outcome_total | number | number | ✅ |
+| AlertEntry | MetricsAlert | baseline_average | number | number | ✅ |
+| AlertEntry | MetricsAlert | increase_ratio | number | number | ✅ |
+| CategoryEntry | TopCategoryItem | category | administrative\|operational\|others\|sales\|suppliers | administrative\|operational\|others\|sales\|suppliers | ✅ |
+| CategoryEntry | TopCategoryItem | operation_type | income\|outcome | income\|outcome | ✅ |
+| CategoryEntry | TopCategoryItem | total_amount | number | number | ✅ |
+| AlertsResponse | /api/metrics/alerts 200 | (raíz) | `AlertEntry[]` | array of MetricsAlert | ✅ |
+| TopCategoriesResponse | /api/metrics/categories/top 200 | (raíz) | `CategoryEntry[]` | array of TopCategoryItem | ✅ |
+| DateRangeFilter | /api/metrics | start_date | string (opt) | string [format date, opt] | ✅ |
+| DateRangeFilter | /api/metrics | end_date | string (opt) | string [format date, opt] | ✅ |
+| DateRangeFilter | /api/metrics/alerts | start_date | string (opt) | string [format date, opt] | ✅ |
+| DateRangeFilter | /api/metrics/alerts | end_date | string (opt) | string [format date, opt] | ✅ |
+| DateRangeFilter | /api/metrics/categories/top | start_date | string (opt) | string [format date, opt] | ✅ |
+| DateRangeFilter | /api/metrics/categories/top | end_date | string (opt) | string [format date, opt] | ✅ |
+| AlertsParams | /api/metrics/alerts | threshold | number | number [min 0, default 0.3, opt] | ✅ |
+| AlertsParams | /api/metrics/alerts | start_date (de DateRangeFilter) | string (opt) | string [format date, opt] | ✅ |
+| AlertsParams | /api/metrics/alerts | end_date (de DateRangeFilter) | string (opt) | string [format date, opt] | ✅ |
+| TopCategoriesParams | /api/metrics/categories/top | operation_type | income\|outcome | income\|outcome [opt] | ✅ |
+| TopCategoriesParams | /api/metrics/categories/top | limit | number | number [min 1, max 20, default 5, integer, opt] | ✅ |
+| TopCategoriesParams | /api/metrics/categories/top | business_type | B2B\|B2C | B2B\|B2C [opt] | ✅ |
+| TopCategoriesParams | /api/metrics/categories/top | start_date (de DateRangeFilter) | string (opt) | string [format date, opt] | ✅ |
+| TopCategoriesParams | /api/metrics/categories/top | end_date (de DateRangeFilter) | string (opt) | string [format date, opt] | ✅ |
+
+`opt` = opcional. En los parámetros, `/docs` los declara todos opcionales. Los tipos hacen obligatorios `threshold`, `operation_type`, `limit` y `business_type` porque el frontend siempre los envía (si se omitiera `operation_type`, la API devolvería gastos).
+
+Otras comprobaciones:
+- `docker compose exec -T -w /app/specs frontend npx tsc --noEmit` → exit 0. Revisa `api-types.ts`, `param-types.ts` y el `src/lib/financial-types.ts` importado.
+- `npm run lint` → exit 0. ESLint revisa también `specs/` (configuración `**/*.{ts,tsx}`, confirmado con `--debug`).
+
+### Revisión independiente (agente sin contexto)
+
+No encontró errores en los nombres ni en los tipos, y confirmó unas 32 afirmaciones de los JSDoc. Encontró 11 imprecisiones, que se verificaron con `curl` o leyendo el código antes de corregirlas:
+
+| Afirmación en el JSDoc | Realidad | Tipo | Corrección |
+|---|---|---|---|
+| `limit`: "los no enteros dan 422" | `5.5` → 422, pero `5.0` → 200 | Imprecisa | Matizado |
+| Fechas: un formato distinto de `YYYY-MM-DD` da 422 | También se aceptan `2026-03-01T00:00:00` y un timestamp Unix (200) | Imprecisa | "Envía solo `YYYY-MM-DD`; no confíes en la API para validar" |
+| `increase_ratio` siempre `> threshold` | Se compara **antes** de redondear (`routes.py:230`) y se redondea después (`:236`): el valor devuelto puede ser igual al umbral | Imprecisa | Explicado, y "muéstralo, no lo recalcules" |
+| `outcome_total` siempre `>= 0` | Solo hay alerta si el gasto supera la media, que es `> 0` (`routes.py:228-230`) | Imprecisa (correcta pero débil) | "Siempre `> baseline_average`" |
+| `baseline_average`: media de todos los períodos anteriores | Los períodos sin movimientos no generan fila en el resumen (`routes.py:165-187`) | Incompleta | Añadido |
+| "Las fechas fuera del dataset devuelven vacío" | Un rango que se solapa en parte devuelve la parte común (`2026-10-01` → `2027-01-31`: 30 movimientos) | Imprecisa | "Un rango que no se solapa…" |
+| `threshold` "en pasos de 0.01" | El PM no lo dice | Sin evidencia | Eliminado |
+| % sobre el total del grupo = suma del panel | Solo es el total real porque `limit` (5) ≥ 2 categorías de ingreso | Ambigua | Explicado. También que la gráfica usa esa suma y que un rango corto puede dar 1 fila o ninguna (un día sin ingresos B2B → `[]`) |
+| (Faltaba) Tipo de la respuesta de `/api/metrics` | Ya existe `FinancialMovement[]` en `src/lib/financial-types.ts` | Ambigüedad | Nota en la cabecera de `api-types.ts` |
+| `tsconfig.json`: `cd frontend/specs && npx tsc --noEmit` | En el host, `node_modules` está vacío y el comando falla | Imprecisa | Comando de Docker |
+| Orden del top: de mayor a menor | Confirmado. Con empate se mantiene el orden de inserción | Sin impacto | Sin cambios (solo hay 2 categorías) |
+
+Después de corregir: `tsc` exit 0, `lint` exit 0 y comparación con OpenAPI 28/28.
+
+## Specs · Fase 3: Especificación de componentes
+
+Entregable: [`frontend/specs/components.md`](frontend/specs/components.md). Plan: [`frontend/specs/plans/phase-3-component-specs.md`](frontend/specs/plans/phase-3-component-specs.md).
+
+### Decisiones del usuario
+
+- **Un único filtro de fechas compartido** por las dos pestañas (el brief no aclaraba si la funcionalidad 3 tenía su propio rango).
+- Se aplican las de la Fase 1: pestañas sin router (F3-1), cabecera con el rango aplicado (F1-9) y `/alerts` tal cual, con el desajuste de la media documentado (F2-1).
+
+### Suposiciones que resultaron incorrectas (❌)
+
+| Suposición | Evidencia | Corrección |
+|---|---|---|
+| Con el dataset actual, un umbral alto deja vacía la tabla de anomalías | El máximo del input es `1` (100 %) y `2025-12` sube un +149.7 %: **sin filtro, ningún umbral válido da `[]`** | Ejemplos de estado vacío con rangos reales comprobados con `curl` (`2026-03-01`→`2026-03-31`; `2026-07-01`→`2026-10-28` con `0.4`) |
+| Ejemplo de importe `$88,086` para `2026-03` | La API devuelve `outcome_total` 88076.9 → `$88,077` | Corregido |
+| Todos los desajustes de la Fase 1 estaban resueltos | **F2-8** (comparación estricta `>`) no aparecía en la spec | Nota añadida en §2.3 y tabla de trazabilidad completa (§5, 31 desajustes) |
+
+### Comprobaciones
+
+- Los 9 bloques TypeScript de `components.md` se extraen y se compilan en modo estricto junto a `api-types.ts` y `param-types.ts` (en una carpeta temporal del contenedor, sin guardarlos en el repo): exit 0. Un error introducido a propósito sí se detecta (exit 2).
+- Los números de los ejemplos (alertas, paneles B2B/B2C y sus porcentajes, rangos vacíos) se comprobaron con la API en marcha el 2026-11-14.
+- Rúbrica: 7 componentes con nombre, props y tipos; tablas de estados en cada uno; estado vacío explícito de la tabla de anomalías; comportamiento con un solo input de fecha; estado vacío de cada panel B2B/B2C.
+
+### Revisión independiente (agente en el papel de implementador)
+
+Un agente sin contexto leyó solo la spec y los tipos como si tuviera que programarlos. Su veredicto inicial: **no podía construirlo sin preguntar**. Se verificaron sus puntos contra las reglas de `.agents/rules/` y el código antes de corregirlos. Uno resultó falso (`index.css:25-32` era correcto).
+
+| Problema | Tipo | Corrección |
+|---|---|---|
+| No estaba claro qué peticiones se lanzan en cada pestaña, si hay caché ni qué pasa con una petición cancelada al cambiar de pestaña | Bloqueante | Tabla de efectos en §1.3: dependencias, pestaña, `AbortController` en el *cleanup* y sin caché |
+| Qué reciben `KPIRow` y las gráficas si `/api/metrics` falla, y dónde va la caja de error | Bloqueante | Tabla de estado → props en §1.4 |
+| Los tipos de `specs/` están fuera de `include: ["src"]`; los imports relativos incumplen FE-03 | Bloqueante | §0.3: los tipos se copian a `src/lib/` y se importan con `@/lib/...` |
+| Validaciones, formatos y totales sin función ni test (regla FE-08) | Bloqueante | §0.5: 9 funciones puras con sus casos de test; los componentes solo reciben datos calculados |
+| "`<input type="date">` solo emite fechas completas" | ❌ Incorrecta | Algunos navegadores emiten `''` mientras se edita: se distingue con `validity.badInput` para no pedir el dataset completo a mitad de escribir |
+| Disposición de la barra de fechas sin definir | Bloqueante | §1.5, disposición con `flex-wrap` |
+| "No hace falta borrar" el valor por defecto de la cabecera | ❌ Contradice FE-10 | Se cambian los dos sitios de la etiqueta |
+| `{appliedThreshold × 100}` en los textos | ❌ Error de coma flotante (`0.07*100` = `7.000000000000001`) | `formatThreshold` (`formatPercent(t * 100)`) |
+| `loading: boolean` obligatorio | ❌ Contradice FE-05 | `loading?: boolean` en todas las props |
+| Tabla de estados ("sin `min`/`max`") frente a tabla de elementos | Contradicción | Tabla única: límites cruzados siempre, los del dataset solo si `facets` cargó |
+| Mensaje de error de la gráfica incorrecto si fallan los dos paneles; precedencia de estados sin definir | Contradicción | Texto nuevo y estados evaluados en orden |
+| `businessTypes` y `Record<BusinessType, …>` podían no coincidir | Contradicción | Una sola lista `businessTypes` de la que salen paneles y barras |
+| `income-outcome-chart.tsx:78-110` | ❌ Incorrecta | `:78-119` |
+| `DashboardTab` compartido frente a "Props no exportadas" | Contradicción | Los tipos compartidos van a `src/lib/dashboard-types.ts` |
+| Props del filtro que permitían combinaciones imposibles | Contradicción | `facets: RequestState<FacetsResponse>` |
+| Menores: cabecera con rango al revés, `aria-invalid` en las fechas, `tabpanel`/`aria-controls`, `Cell`/leyenda/tooltip de la gráfica, mapa de categorías, estilo FE-04 de los ejemplos, dos cajas de error a la vez | Ambigüedades | Todas resueltas en la spec |
+
+Después de corregir: los 9 bloques compilan en modo estricto y los 31 desajustes de la Fase 1 siguen trazados.
+
+## Specs · Fase 4: Contrato de datos
+
+Entregable: [`frontend/specs/README.md`](frontend/specs/README.md). Plan: [`frontend/specs/plans/phase-4-data-contract.md`](frontend/specs/plans/phase-4-data-contract.md).
+
+### Decisión del usuario
+
+- Actualizar en este mismo commit el `memory-bank` (regla UR-03) y la tabla de entregables de `README.md` y `README.es.md` (regla GD-02). En el `memory-bank` solo se registra lo que existe: las specs como archivos y que las funcionalidades **no** están implementadas (UR-03 prohíbe describir como existente lo que no está en el código).
+
+### Comprobaciones
+
+| Comprobación | Resultado |
+|---|---|
+| `docker compose exec -T -w /app/specs frontend npx tsc --noEmit` (el `npx tsc --noEmit` del ejercicio, dentro del contenedor) | ✅ exit 0 |
+| `npm run lint` | ✅ exit 0 |
+| Los 3 bloques TypeScript del README, compilados en modo estricto contra los tipos | ✅ exit 0; un `AlertsRequest` sin `threshold` añadido a propósito sí falla |
+| Tipos contra el OpenAPI en vivo (script de la Fase 2) | ✅ 28/28 |
+| Rutas, parámetros y valores de ejemplo del README, con `curl` | ✅ Unas 35 peticiones al redactar y unos 65 valores en la revisión independiente: todos coinciden |
+| Enlaces relativos y anclas de `README.md` y `components.md` | ✅ 26 enlaces, 0 rotos |
+| Archivos cambiados en la rama respecto a `main` | ✅ Solo `frontend/specs/`, `verification.md`, `memory-bank/` y los dos README: ni componentes, ni `fetch`, ni backend |
+| Rúbrica | ✅ Las tres funcionalidades con endpoints, tipos de petición y respuesta, valores válidos y restricciones, y 11, 11 y 13 casos límite con lo que muestra la interfaz |
+
+### Revisión con una sesión nueva
+
+Un agente sin contexto partió **solo** del README, siguiendo únicamente los enlaces que el README le indicaba. Verificó unos 65 valores con `curl`, todos correctos. Su veredicto: una sesión nueva aún tendría que hacer 2 o 3 preguntas. Se verificaron sus puntos antes de corregirlos:
+
+| Afirmación | Realidad | Tipo | Corrección |
+|---|---|---|---|
+| "No escribas fechas fijas (reglas FE-10 y TE-02)" | TE-02 es el estilo de los tests del backend; la regla de las fechas fijas es **TE-03**. FE-10 trata de la etiqueta "2024" | ❌ Incorrecta | TE-03 en el README y en `components.md`; FE-10 solo para la etiqueta |
+| README: "El input del umbral es texto" | `components.md` lo define como `<input type="number">` | ❌ Contradicción | Los dos dicen `type="number"`, cuyo valor llega como texto (`''` si no es numérico) |
+| (Pregunta) ¿Se envía una fecha escrita a mano fuera de `min`/`max`? | No estaba definido; el caso 1.8 lo necesitaba | Ambigüedad | Sí se envía: solo bloquean `badInput` e inicio > fin (README y `components.md` §1.5) |
+| (Pregunta) ¿Y si `facets.business_types` tiene un solo valor? | No estaba definido | Ambigüedad | Hoy no puede ocurrir; si ocurriera, un panel y una barra (caso 3.11) |
+| "Inicio > fin devuelve `[]`" | Solo constaba para `/api/metrics` | Incompleta | Comprobado también en `/alerts` y `/categories/top` |
+| Menores | `formatMonthYearLabel` es privada; reglas sin enlace; funciones de `lib/` sin referencia; alias de tipos que parecían importables; tests no mencionados; caso 1.3 poco claro | Claridad | Todos corregidos |
+
+Después de corregir: `tsc` exit 0 y 26 enlaces sin romper.

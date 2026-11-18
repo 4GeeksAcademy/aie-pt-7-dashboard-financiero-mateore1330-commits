@@ -1,7 +1,7 @@
 ---
 name: current-state
 description: Qué funciona hoy, carencias conocidas y siguientes prioridades técnicas
-last_verified: 2026-11-13 (sobre el commit 57d00da y la traducción del mensaje de error)
+last_verified: 2026-11-14 (sobre el commit 2c92ea5 de la rama feat/frontend-specs y los cambios de su Fase 4)
 ---
 
 # Estado actual
@@ -22,6 +22,7 @@ last_verified: 2026-11-13 (sobre el commit 57d00da y la traducción del mensaje 
 | `npm run lint` | ✅ Sin errores |
 | `npm run build` | ✅ Correcto (1 aviso de tamaño, ver carencias) |
 | Agrupación mensual en `America/New_York` | ✅ 12 meses (corregido en `94b6fd1`) |
+| Tipos de `frontend/specs/` contra el OpenAPI en vivo (2026-11-14) | ✅ 28/28 propiedades; `docker compose exec -T -w /app/specs frontend npx tsc --noEmit` en modo estricto, exit 0 |
 
 ## Historial reciente
 
@@ -37,7 +38,11 @@ last_verified: 2026-11-13 (sobre el commit 57d00da y la traducción del mensaje 
 | `1b46bed` | Reglas refinadas tras validarlas con tareas reales (Fase 3) |
 | `290c865` | Memory bank (Fase 4) |
 | `57d00da` | **docs:** entregables del proyecto en los dos README |
-| — | **fix:** mensaje de error de la interfaz traducido al inglés (N6) |
+| `8022d3e` | **fix:** mensaje de error de la interfaz traducido al inglés (N6) |
+| `65d5b3e` | Specs, Fase 1: exploración de la API y 31 desajustes entre el PM y la API (rama `feat/frontend-specs`) |
+| `0cf4626` | Specs, Fase 2: tipos TypeScript verificados contra OpenAPI |
+| `2c92ea5` | Specs, Fase 3: especificación de componentes |
+| — | Specs, Fase 4: contrato de datos (`frontend/specs/README.md`) |
 
 El detalle de cada verificación está en [`verification.md`](../verification.md), y el análisis de hallazgos en [`engineering-findings.md`](../engineering-findings.md).
 
@@ -61,12 +66,15 @@ Todas comprobadas en el código. El ID es el del hallazgo en `engineering-findin
 | La fuente `Inter` se declara pero no se carga, y el `<title>` de la página es "frontend" | `index.css:79`, `index.html` | — |
 | No hay tests de componentes React, solo de `lib/` | No hay testing-library | — |
 | TypeScript sin modo `strict`: `any` implícito y errores de `null` compilan | `tsconfig.app.json` | — |
+| El filtro de fechas, la tabla de anomalías y la vista B2B vs B2C están **especificados, pero no implementados** | [`frontend/specs/README.md`](../frontend/specs/README.md); ningún componente ni `fetch` nuevo en `src/` | — |
+| La tabla de anomalías no puede mostrar la "media de 3 períodos" que pide el PM: la API calcula la media de todos los meses anteriores | `routes.py:219-240`, pregunta abierta Q1 de las specs | — |
 
 ## Siguientes prioridades
 
 > En el repositorio **no hay roadmap de producto**. Estas son prioridades **técnicas** que salen de las carencias de arriba, ordenadas por impacto en quien edite el proyecto. No son funcionalidades acordadas.
 
-1. **Calcular la etiqueta de periodo a partir de los datos** y unificar sus dos copias (A6). Es lo único que muestra información incorrecta al usuario.
-2. **Añadir CI** que ejecute los cuatro comandos de la regla TE-01 (T4).
-3. **Eliminar el aviso de Starlette**, por ejemplo cambiando el cliente de test (E2).
-4. **Decidir qué hacer con el código heredado** (`mock-data.ts`, `hero.png`) y con los endpoints que no se usan. Es una decisión del equipo: BE-02 impide borrar endpoints y BE-03 impide borrar `mock-data.ts` sin que se pida.
+1. **Calcular la etiqueta de periodo a partir de los datos** y unificar sus dos copias (A6). Es lo único que muestra información incorrecta al usuario. Ya está especificado como parte del filtro de fechas (`frontend/specs/components.md` §1.6).
+2. **Implementar las tres funcionalidades especificadas** en `frontend/specs/` (filtro de fechas, tabla de anomalías y vista B2B vs B2C), empezando por leer su `README.md`.
+3. **Añadir CI** que ejecute los cuatro comandos de la regla TE-01 (T4).
+4. **Eliminar el aviso de Starlette**, por ejemplo cambiando el cliente de test (E2).
+5. **Decidir qué hacer con el código heredado** (`mock-data.ts`, `hero.png`) y con los endpoints que no se usan. Es una decisión del equipo: BE-02 impide borrar endpoints y BE-03 impide borrar `mock-data.ts` sin que se pida.
