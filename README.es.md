@@ -30,6 +30,17 @@ El contexto del repositorio se construyó fase por fase con un coding agent. Cad
 
 El rastro de verificación de cada fase (afirmación incorrecta → corrección) está en [`verification.md`](./verification.md) y en el cuerpo de los mensajes de commit.
 
+### Desarrollo guiado por especificaciones (rama `feat/frontend-specs`)
+
+Tres funcionalidades nuevas (filtro de rango de fechas, tabla de alertas de anomalías y vista B2B vs B2C) especificadas antes de implementarlas, en [`frontend/specs/`](./frontend/specs/). Empieza por su [`README.md`](./frontend/specs/README.md), el contrato de datos. El plan de cada fase está en [`frontend/specs/plans/`](./frontend/specs/plans/).
+
+| Fase | Entregable | Commits |
+|---|---|---|
+| 1 · Explorar la API | [`api-exploration.md`](./frontend/specs/api-exploration.md): endpoints, casos límite reales y 31 desajustes entre el brief del PM y la API | `65d5b3e` |
+| 2 · Tipos TypeScript | [`api-types.ts`](./frontend/specs/api-types.ts), [`param-types.ts`](./frontend/specs/param-types.ts): verificados contra el OpenAPI en vivo (28/28 propiedades), con un `tsconfig.json` estricto | `0cf4626` |
+| 3 · Especificación de componentes | [`components.md`](./frontend/specs/components.md): componentes, props tipadas y estados de renderizado | `2c92ea5` |
+| 4 · Contrato de datos | [`README.md`](./frontend/specs/README.md): endpoints, tipos, restricciones de los parámetros y casos límite de cada funcionalidad | `docs(specs): add data contract readme…` |
+
 ## Pasos recomendados
 
 1. Haz un fork de este repositorio a tu cuenta.

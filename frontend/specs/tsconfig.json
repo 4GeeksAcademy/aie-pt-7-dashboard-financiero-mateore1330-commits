@@ -1,0 +1,23 @@
+{
+  // Type-checks only the spec files in this folder, in strict mode.
+  // The app's tsconfig.json has "files": [] and tsconfig.app.json only includes "src",
+  // so `npx tsc --noEmit` from frontend/ never reaches specs/.
+  // Run inside the frontend container (host node_modules is empty), from the repo root:
+  //   docker compose exec -T -w /app/specs frontend npx tsc --noEmit
+  "compilerOptions": {
+    "target": "es2023",
+    "lib": ["ES2023"],
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "verbatimModuleSyntax": true,
+    "moduleDetection": "force",
+    "noEmit": true,
+    "skipLibCheck": true,
+    "types": [],
+
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true
+  },
+  "include": ["*.ts"]
+}

@@ -56,6 +56,8 @@ Dentro de `routes.py`:
 | `lib/mock-data.ts` | Datos de 2024 que **no importa nadie** (código heredado) |
 | `index.css` | Tema: variables CSS para `:root` y `.dark`, mapeadas a Tailwind en `@theme inline` |
 
+Fuera de `src/`, [`frontend/specs/`](../frontend/specs/README.md) contiene las **especificaciones** de tres funcionalidades todavía no implementadas (tipos, componentes y contrato de datos). La app **no** importa esos archivos: `tsconfig.app.json` solo incluye `src`, y la carpeta tiene su propio `tsconfig.json` estricto.
+
 Fuera de `src/`, [`frontend/index.html`](../frontend/index.html) lleva el título, la meta description y `<meta name="robots" content="noindex, nofollow">` (panel interno), y [`frontend/public/robots.txt`](../frontend/public/robots.txt) deja rastrear la página (para que se lea el `noindex`) y excluye `/api/`. Vite copia `public/` tal cual a `dist/`.
 
 ## Acoplamientos que hay que conocer
