@@ -40,10 +40,14 @@ export function KPICard({ label, value, helperText, icon: Icon, variant, loading
         <CardContent className="p-6 flex flex-col gap-4">
           <div className="flex items-center justify-between">
             <Skeleton className="h-4 w-28" />
-            <Skeleton className="h-8 w-8 rounded-lg" />
+            <Skeleton className="h-7 w-7 rounded-lg" />
           </div>
-          <Skeleton className="h-8 w-36" />
-          <Skeleton className="h-3 w-44" />
+          <Skeleton className="h-9 w-36" />
+          {/* Same height as the helper text, which always reserves 2 lines (FE-05) */}
+          <div className="flex h-[3.25em] flex-col justify-around text-xs">
+            <Skeleton className="h-3 w-44" />
+            <Skeleton className="h-3 w-32" />
+          </div>
         </CardContent>
       </Card>
     )
@@ -51,17 +55,19 @@ export function KPICard({ label, value, helperText, icon: Icon, variant, loading
 
   return (
     <Card className="border-border/60 hover:border-border transition-colors">
-      <CardContent className="p-6 flex flex-col gap-4">
-        <div className="flex items-center justify-between">
-          <span className="text-sm font-medium text-muted-foreground tracking-wide uppercase text-pretty">
-            {label}
-          </span>
-          <span className={cn('p-1.5 rounded-lg', styles.badge)}>
-            <Icon size={16} className={styles.icon} />
-          </span>
-        </div>
-        <p className="text-3xl font-semibold tracking-tight text-foreground">{value}</p>
-        <p className="text-xs text-muted-foreground leading-relaxed">{helperText}</p>
+      <CardContent className="p-6">
+        <dl className="flex flex-col gap-4">
+          <dt className="flex items-center justify-between">
+            <span className="text-sm font-medium text-muted-foreground tracking-wide uppercase text-pretty">
+              {label}
+            </span>
+            <span className={cn('p-1.5 rounded-lg', styles.badge)}>
+              <Icon size={16} className={styles.icon} />
+            </span>
+          </dt>
+          <dd className="text-3xl font-semibold tracking-tight text-foreground">{value}</dd>
+          <dd className="text-xs text-muted-foreground leading-relaxed min-h-[3.25em]">{helperText}</dd>
+        </dl>
       </CardContent>
     </Card>
   )

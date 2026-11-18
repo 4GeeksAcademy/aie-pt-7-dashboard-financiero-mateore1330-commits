@@ -1,7 +1,8 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { Skeleton } from '@/components/ui/skeleton'
 import { type MonthlyDataPoint } from '@/lib/financial-types'
 import { formatCurrency } from '@/lib/financial-utils'
+import { ChartDataTable } from './chart-data-table'
+import { ChartSkeleton } from './chart-skeleton'
 import {
   LineChart,
   Line,
@@ -33,7 +34,7 @@ interface CustomTooltipProps {
 function CustomTooltip({ active, payload, label }: CustomTooltipProps) {
   if (!active || !payload?.length) return null
   return (
-    <div className="rounded-lg border border-border bg-card px-4 py-3 shadow-lg text-sm">
+    <div role="status" aria-live="polite" className="rounded-lg border border-border bg-card px-4 py-3 shadow-lg text-sm">
       <p className="font-semibold text-foreground mb-2">{label}</p>
       {payload.map((entry) => (
         <div key={entry.name} className="flex items-center gap-2 py-0.5">
@@ -48,17 +49,7 @@ function CustomTooltip({ active, payload, label }: CustomTooltipProps) {
 
 export function IncomeOutcomeChart({ data, loading }: IncomeOutcomeChartProps) {
   if (loading) {
-    return (
-      <Card className="border-border/60">
-        <CardHeader className="pb-4">
-          <Skeleton className="h-5 w-52" />
-          <Skeleton className="h-3 w-64 mt-1" />
-        </CardHeader>
-        <CardContent>
-          <Skeleton className="h-[280px] w-full rounded-lg" />
-        </CardContent>
-      </Card>
-    )
+    return <ChartSkeleton />
   }
 
   const hasData = data.some((d) => d.income > 0 || d.outcome > 0)
@@ -66,8 +57,10 @@ export function IncomeOutcomeChart({ data, loading }: IncomeOutcomeChartProps) {
   return (
     <Card className="border-border/60">
       <CardHeader className="pb-4">
-        <CardTitle className="text-base font-semibold">Income vs. Outcome</CardTitle>
-        <CardDescription>Monthly revenue and expenditure evolution</CardDescription>
+        <CardTitle className="text-base font-semibold">
+          <h2>Income vs. Outcome</h2>
+        </CardTitle>
+        <CardDescription className="max-sm:min-h-10">Monthly revenue and expenditure evolution</CardDescription>
       </CardHeader>
       <CardContent>
         {!hasData ? (
@@ -75,8 +68,14 @@ export function IncomeOutcomeChart({ data, loading }: IncomeOutcomeChartProps) {
             No data available to display
           </div>
         ) : (
+          <>
           <ResponsiveContainer width="100%" height={280}>
-            <LineChart data={data} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
+            <LineChart
+              data={data}
+              margin={{ top: 4, right: 8, left: 0, bottom: 0 }}
+              aria-label="Income vs. Outcome chart"
+              desc="Monthly income and outcome. Use the arrow keys to move between months. The same data is in the table that follows."
+            >
               <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" strokeOpacity={0.6} />
               <XAxis
                 dataKey="month"
@@ -101,6 +100,7 @@ export function IncomeOutcomeChart({ data, loading }: IncomeOutcomeChartProps) {
                 type="monotone"
                 dataKey="income"
                 name="income"
+                legendType="plainline"
                 stroke="var(--chart-income)"
                 strokeWidth={2}
                 dot={{ r: 3, fill: 'var(--chart-income)', strokeWidth: 0 }}
@@ -110,13 +110,26 @@ export function IncomeOutcomeChart({ data, loading }: IncomeOutcomeChartProps) {
                 type="monotone"
                 dataKey="outcome"
                 name="outcome"
+                legendType="plainline"
                 stroke="var(--chart-outcome)"
                 strokeWidth={2}
+                strokeDasharray="6 4"
                 dot={{ r: 3, fill: 'var(--chart-outcome)', strokeWidth: 0 }}
                 activeDot={{ r: 5, strokeWidth: 0 }}
               />
             </LineChart>
           </ResponsiveContainer>
+          <ChartDataTable
+            caption="Income vs. Outcome by month"
+            rowHeaderLabel="Month"
+            rowHeader={(row) => row.month}
+            columns={[
+              { label: 'Income', value: (row) => formatCurrency(row.income) },
+              { label: 'Outcome', value: (row) => formatCurrency(row.outcome) },
+            ]}
+            rows={data}
+          />
+          </>
         )}
       </CardContent>
     </Card>

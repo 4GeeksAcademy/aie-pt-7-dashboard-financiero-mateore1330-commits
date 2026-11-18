@@ -1,7 +1,7 @@
 ---
 name: architecture
 description: Cómo fluyen los datos, dónde vive cada responsabilidad y qué partes están acopladas
-last_verified: 2026-11-14 (sobre el commit 2c92ea5 de la rama feat/frontend-specs y los cambios de su Fase 4)
+last_verified: 2026-11-17 (sobre el commit 23be14d y la revisión final de la Fase 6 de skills)
 ---
 
 # Arquitectura
@@ -40,6 +40,7 @@ App.tsx ◀───────────── JSON: FinancialMovement[] ◀
 Dentro de `routes.py`:
 - **Helpers puros:** `filter_movements`, `filter_movements_by_date`, `summarize_movements`, `build_top_categories`, `calculate_net_value`, `detect_outcome_alerts`, `build_metrics_facets` y `ensure_chronological_order`.
 - **Filtro por `business_type`:** está escrito en línea en 6 endpoints. En 4 es el parámetro opcional (`if business_type is not None:` en `:278`, `:296`, `:312` y `:351`) y en 2 un valor fijo (`/b2b` en `:370` y `/b2c` en `:386`). No usa ningún helper.
+- **Parámetros de consulta:** se declaran con `Annotated[T, Query()] = valor` (o `Query(ge=…, le=…)`), y las 2 fechas obligatorias de `/comparison`, sin valor (skill `fastapi`), y la respuesta con `response_model=` (regla BE-01).
 - **Generación aleatoria:** usa el estado **global** de `random`, fijado con `random.seed(seed)` **en cada petición**, porque cada endpoint vuelve a llamar a `generate_mock_movements(seed=42)`. Cambiar el número o el orden de las llamadas a `random` cambia todo el conjunto de datos (regla BE-05).
 
 ### Frontend (`frontend/src/`)
@@ -47,8 +48,8 @@ Dentro de `routes.py`:
 | Ruta | Responsabilidad |
 |---|---|
 | [`main.tsx`](../frontend/src/main.tsx) | Monta `<App />` |
-| [`App.tsx`](../frontend/src/App.tsx) | Pide los datos, gestiona `loading` y `error`, calcula KPIs y serie mensual, y compone la página |
-| `components/dashboard/` | Componentes de negocio: cabecera, fila y tarjeta de KPI, y las 2 gráficas |
+| [`App.tsx`](../frontend/src/App.tsx) | Pide los datos, gestiona `loading` y `error`, calcula KPIs y serie mensual, y compone la página. Las 2 gráficas se cargan con `React.lazy`, cada una dentro de un `ChartErrorBoundary` y un `Suspense` con `ChartSkeleton` como *fallback*: Recharts va en un trozo de JS aparte, que se descarga en paralelo a la petición a la API |
+| `components/dashboard/` | Componentes de negocio: cabecera, fila y tarjeta de KPI, las 2 gráficas, `chart-data-table.tsx` (tabla `sr-only` con los datos de cada gráfica, como alternativa textual), `chart-skeleton.tsx` (estado de carga de las gráficas y *fallback* del `Suspense`) y `chart-error-boundary.tsx` (si falla la carga de una gráfica, solo esa muestra un error; es una clase porque React lo exige) |
 | `components/ui/` | Primitivas de shadcn/ui (`card`, `skeleton`) |
 | `lib/financial-types.ts` | Tipos del contrato (`FinancialMovement`…) y de la vista (`KPIMetrics`, `MonthlyDataPoint`) |
 | `lib/financial-utils.ts` | Funciones puras: `computeKPIs`, `computeMonthlyData`, `formatCurrency` (USD) y `formatPercent` |
@@ -56,6 +57,8 @@ Dentro de `routes.py`:
 | `index.css` | Tema: variables CSS para `:root` y `.dark`, mapeadas a Tailwind en `@theme inline` |
 
 Fuera de `src/`, [`frontend/specs/`](../frontend/specs/README.md) contiene las **especificaciones** de tres funcionalidades todavía no implementadas (tipos, componentes y contrato de datos). La app **no** importa esos archivos: `tsconfig.app.json` solo incluye `src`, y la carpeta tiene su propio `tsconfig.json` estricto.
+
+Fuera de `src/`, [`frontend/index.html`](../frontend/index.html) lleva el título, la meta description y `<meta name="robots" content="noindex, nofollow">` (panel interno), y [`frontend/public/robots.txt`](../frontend/public/robots.txt) deja rastrear la página (para que se lea el `noindex`) y excluye `/api/`. Vite copia `public/` tal cual a `dist/`.
 
 ## Acoplamientos que hay que conocer
 

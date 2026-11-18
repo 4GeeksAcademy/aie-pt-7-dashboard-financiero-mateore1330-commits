@@ -1,7 +1,7 @@
 ---
 name: product-overview
 description: Qué es el producto, qué muestra, qué ofrece su API y qué no es
-last_verified: 2026-11-13 (sobre el commit 1b46bed y los cambios de la Fase 4)
+last_verified: 2026-11-17 (sobre el commit 23be14d y la revisión final de la Fase 6 de skills)
 ---
 
 # Descripción del producto
@@ -13,7 +13,7 @@ last_verified: 2026-11-13 (sobre el commit 1b46bed y los cambios de la Fase 4)
 Un **dashboard de métricas financieras** de una empresa, con un frontend en React y un backend en FastAPI.
 
 - El README lo describe como *"Dashboard de métricas financieras con frontend en React + TypeScript y backend en FastAPI"* ([`README.es.md`](../README.es.md)).
-- La interfaz se presenta como **"Financial Overview · Executive metrics dashboard"** ([`dashboard-header.tsx`](../frontend/src/components/dashboard/dashboard-header.tsx)).
+- La cabecera muestra el título **"Financial Overview"** y el subtítulo **"Executive metrics dashboard"** ([`dashboard-header.tsx`](../frontend/src/components/dashboard/dashboard-header.tsx)). Unidos con "·", son también el `<title>` de la pestaña ([`index.html`](../frontend/index.html)).
 - La API se llama **"Financial Metrics API"** ([`backend/app/main.py`](../backend/app/main.py)).
 - El repositorio procede de un proyecto formativo de 4Geeks Academy ([`README.md`](../README.md)).
 
@@ -23,14 +23,19 @@ Una sola página ([`App.tsx`](../frontend/src/App.tsx)) con:
 
 | Elemento | Contenido | Archivo |
 |---|---|---|
-| Cabecera | Título y etiqueta de periodo "2024 - Full Year" (escrita a mano, ver [estado actual](current-state.md)) | `dashboard-header.tsx`, `App.tsx:49` |
+| Cabecera | Título y etiqueta de periodo "2024 - Full Year" (escrita a mano, ver [estado actual](current-state.md)) | `dashboard-header.tsx`, `App.tsx:62` |
 | 4 tarjetas KPI | Total Income, Total Outcome, Profit, Profit Margin | `kpi-row.tsx`, `kpi-card.tsx` |
 | Gráfica "Income vs. Outcome" | Ingresos y gastos por mes | `income-outcome-chart.tsx` |
 | Gráfica "Profit Margin %" | Margen de beneficio por mes | `profit-percent-chart.tsx` |
 
-- Mientras cargan los datos se muestran *skeletons*. Si la API falla, aparece un mensaje de error (`App.tsx:37`), las tarjetas KPI muestran "—" y las gráficas, "No data available to display".
-- La interfaz se muestra siempre en modo oscuro (clase `dark` en `App.tsx:46`).
-- No hay filtros, navegación ni interacción, salvo los *tooltips* de las gráficas.
+- Mientras cargan los datos se muestran *skeletons*. Si la API falla, aparece un mensaje de error (`App.tsx:50`), las tarjetas KPI muestran "—" y las gráficas, "No data available to display". Si lo que falla es la carga del código de una gráfica, solo esa muestra "Could not load the chart.". Los *skeletons* ocupan lo mismo que el contenido final, así que nada salta al llegar los datos.
+- La interfaz se muestra siempre en modo oscuro (clase `dark` en `App.tsx:59`).
+- No hay filtros, navegación ni interacción, salvo los *tooltips* de las gráficas. Las gráficas también se pueden recorrer con el teclado: Tab para entrar y flechas para moverse entre meses (capa de accesibilidad de Recharts).
+- **Accesibilidad** (skill `accessibility`, ver [`progress.md`](progress.md)):
+  - el título de la pestaña es "Financial Overview · Executive metrics dashboard";
+  - cada gráfica tiene nombre (`aria-label`), una tabla de datos oculta a la vista (`sr-only`) para los lectores de pantalla y un tooltip que se anuncia;
+  - la línea de gastos es discontinua, para no depender solo del color;
+  - el fin de la carga y el error se anuncian (`role="status"` y `role="alert"`).
 
 Valores mostrados el 2026-11-13: income $1,258,147 · outcome $762,132 · profit $496,015 · margin 39.4%. Cambian si cambia la fecha (ver "Datos" más abajo).
 

@@ -68,9 +68,9 @@ En un archivo nuevo, copia el estilo del archivo más parecido de su misma carpe
 
 **Regla:** Todo componente que muestre datos de la API debe aceptar `loading?: boolean` y, mientras sea `true`, mostrar un `Skeleton` (`@/components/ui/skeleton`) con la misma forma que el contenido final.
 
-**Por qué:** [`App.tsx`](../../frontend/src/App.tsx) pasa `loading` a todos los componentes de datos, y estos lo resuelven con `Skeleton`: [`kpi-card.tsx:37`](../../frontend/src/components/dashboard/kpi-card.tsx#L37), [`income-outcome-chart.tsx:50`](../../frontend/src/components/dashboard/income-outcome-chart.tsx#L50) y [`profit-percent-chart.tsx:51`](../../frontend/src/components/dashboard/profit-percent-chart.tsx#L51) (hallazgo N4).
+**Por qué:** [`App.tsx`](../../frontend/src/App.tsx) pasa `loading` a todos los componentes de datos, y estos lo resuelven con `Skeleton`: [`kpi-card.tsx:37`](../../frontend/src/components/dashboard/kpi-card.tsx#L37), [`income-outcome-chart.tsx:51`](../../frontend/src/components/dashboard/income-outcome-chart.tsx#L51) y [`profit-percent-chart.tsx:53`](../../frontend/src/components/dashboard/profit-percent-chart.tsx#L53), que devuelven el `ChartSkeleton` compartido de [`chart-skeleton.tsx`](../../frontend/src/components/dashboard/chart-skeleton.tsx) (hallazgo N4).
 
-**✅ Haz:** `if (loading) { return (<Card>…<Skeleton className="h-8 w-36" />…</Card>) }` antes del render normal.
+**✅ Haz:** `if (loading) { return (<Card>…<Skeleton className="h-9 w-36" />…</Card>) }` antes del render normal, con la misma altura que el contenido final (el valor de `kpi-card.tsx` es `text-3xl`, de 36 px, y su `Skeleton` es `h-9`).
 
 **❌ Evita:** devolver `null` o el texto "Loading..." mientras cargan los datos.
 
@@ -83,9 +83,9 @@ En un archivo nuevo, copia el estilo del archivo más parecido de su misma carpe
 1. Defínelo en [`index.css`](../../frontend/src/index.css) en `:root` **y** en `.dark`.
 2. Si lo vas a usar como clase de Tailwind, añade también `--color-<nombre>: var(--<nombre>)` en el bloque `@theme inline`.
 
-**Por qué:** los colores del tema están en `index.css` (`:root`, líneas 5-40, y `.dark`, líneas 42-76). `App.tsx:46` aplica la clase `dark`, así que **lo que se ve es la variante `.dark`** (hallazgo N5).
+**Por qué:** los colores del tema están en `index.css` (`:root`, líneas 5-40, y `.dark`, líneas 42-76). `App.tsx:59` aplica la clase `dark`, así que **lo que se ve es la variante `.dark`** (hallazgo N5).
 
-**✅ Haz:** `stroke="var(--chart-outcome)"` ([`income-outcome-chart.tsx:113`](../../frontend/src/components/dashboard/income-outcome-chart.tsx#L113)) o `variantStyles` en `kpi-card.tsx`.
+**✅ Haz:** `stroke="var(--chart-outcome)"` ([`income-outcome-chart.tsx:114`](../../frontend/src/components/dashboard/income-outcome-chart.tsx#L114)) o `variantStyles` en `kpi-card.tsx`.
 
 **❌ Evita:** `text-green-500`, `#22c55e` o `stroke="red"`, o definir un color nuevo solo en `:root`.
 
@@ -95,7 +95,7 @@ En un archivo nuevo, copia el estilo del archivo más parecido de su misma carpe
 
 **Regla:** Escribe en inglés todos los textos que ve el usuario: títulos, etiquetas, descripciones, mensajes vacíos y mensajes de error.
 
-**Por qué:** [`index.html:2`](../../frontend/index.html#L2) declara `lang="en"`, y todos los textos de los componentes están en inglés ("Financial Overview", "No data available to display"). El único texto en español, el mensaje de error de [`App.tsx:37`](../../frontend/src/App.tsx#L37), ya se tradujo (hallazgo N6).
+**Por qué:** [`index.html:2`](../../frontend/index.html#L2) declara `lang="en"`, y todos los textos de los componentes están en inglés ("Financial Overview", "No data available to display"). El único texto en español, el mensaje de error de [`App.tsx:50`](../../frontend/src/App.tsx#L50), ya se tradujo (hallazgo N6).
 
 **✅ Haz:** `"Could not load financial data. Check the backend API."`
 
@@ -129,7 +129,7 @@ En un archivo nuevo, copia el estilo del archivo más parecido de su misma carpe
 
 ## FE-10 · No uses el código heredado de la versión con datos de 2024
 
-**Regla:** No uses [`src/lib/mock-data.ts`](../../frontend/src/lib/mock-data.ts) como fuente de datos: los datos vienen siempre de `GET /api/metrics`. Si cambias la etiqueta del periodo de la cabecera, cámbiala en los dos sitios donde está: [`App.tsx:49`](../../frontend/src/App.tsx#L49) (`"2024 - Full Year"`) y el valor por defecto de [`dashboard-header.tsx:7`](../../frontend/src/components/dashboard/dashboard-header.tsx#L7) (`'2024 — Full Year'`).
+**Regla:** No uses [`src/lib/mock-data.ts`](../../frontend/src/lib/mock-data.ts) como fuente de datos: los datos vienen siempre de `GET /api/metrics`. Si cambias la etiqueta del periodo de la cabecera, cámbiala en los dos sitios donde está: [`App.tsx:62`](../../frontend/src/App.tsx#L62) (`"2024 - Full Year"`) y el valor por defecto de [`dashboard-header.tsx:7`](../../frontend/src/components/dashboard/dashboard-header.tsx#L7) (`'2024 — Full Year'`).
 
 **Por qué:** `mock-data.ts` (fechas `2024-*`) y `src/assets/hero.png` no los importa ningún archivo. Son restos de una versión anterior, igual que la etiqueta "2024", que no coincide con los datos reales (12 meses anteriores al mes actual) ni entre sus dos copias (hallazgo A6).
 

@@ -1,7 +1,7 @@
 ---
 name: tech-stack
 description: Lenguajes, frameworks, versiones instaladas, infraestructura y herramientas
-last_verified: 2026-11-13 (sobre el commit 1b46bed y los cambios de la Fase 4)
+last_verified: 2026-11-17 (sobre el commit 23be14d y la revisión final de la Fase 6 de skills)
 ---
 
 # Stack tecnológico

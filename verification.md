@@ -247,6 +247,267 @@ El auditor también señaló **información que faltaba**, y se añadió:
 
 ---
 
+## Skills · Fase 1: Descubrir y cargar las skills
+
+**Fecha:** 2026-11-16. Plan: [`plans/phase-1-discover-skills.md`](plans/phase-1-discover-skills.md).
+
+Se instalaron `accessibility` (`addyosmani/web-quality-skills`) y `vercel-react-best-practices` (`vercel-labs/agent-skills`) en [`.agents/skills/`](.agents/skills/), y se registraron en [`skills-lock.json`](skills-lock.json). El detalle está en [`memory-bank/progress.md`](memory-bank/progress.md).
+
+### Comprobaciones ejecutadas
+
+| Comprobación | Resultado |
+|---|---|
+| Build, lint y tests antes de cambiar nada | ✅ Build OK, con 1 advertencia ya existente (JS de 584,17 kB > 500 kB) · lint limpio · 6 tests de frontend · 15 de backend |
+| Instalación de prueba en una carpeta temporal | ✅ Solo crea `.agents/skills/<skill>/` y `skills-lock.json` |
+| `diff -r` entre lo instalado y los repos de origen | ✅ Idénticos |
+| Archivos ejecutables o scripts en las skills | ✅ Ninguno: solo `.md` y `.json` |
+| Afirmación del enunciado: "la skill de Vercel cubre `next/image`, `next/font` y metadatos" | ❌ `grep` sin resultados en sus 72 archivos de reglas y en `AGENTS.md` |
+
+### Correcciones (afirmación incorrecta → corrección)
+
+- **"La palabra `metadata` no aparece en la skill de Vercel"** → Sí aparece, pero como *request metadata* en `async-cheap-condition-before-await.md:10`, que no habla de los metadatos de la página. Se detectó al releer antes de la revisión.
+
+### Revisión independiente de `progress.md`
+
+Un **agente nuevo, sin contexto**, contrastó `progress.md` con las skills instaladas, el código y `node_modules`, y volvió a ejecutar build, lint y tests. Confirmó como correctos los recuentos (70 reglas y su reparto por prefijo, los 3 archivos de `accessibility`), las referencias de línea de los landmarks y del título, el resultado de partida y `skills-lock.json`. **No encontró ninguna regla mal clasificada.**
+
+Encontró estos problemas, todos comprobados antes de corregirlos:
+
+| Afirmación | Realidad | Gravedad | Corrección |
+|---|---|---|---|
+| "Los únicos comandos que aparecen son `pnpm install` y `npx svgo`" | `accessibility/SKILL.md:413` y `:416` traen `npx lighthouse` y `npm install @axe-core/cli -g`, y el README de Vercel, 5 comandos `pnpm` | ❌ Incorrecta | Lista completa |
+| "Hoy no hay botones ni enlaces", como si no hubiera nada que usar con el teclado | Recharts 3.8.1 activa `accessibilityLayer` por defecto (`CartesianChart.js:24`), y con eso cada gráfico recibe `tabIndex=0` y `role="application"` (`RootSurface.js:44-54`). **Los dos gráficos se pueden enfocar con Tab** | Imprecisa | Fila reescrita: el teclado y el foco se comprueban en los gráficos |
+| "Falta comprobar si los iconos se anuncian" | `lucide-react` 1.8.0 ya pone `aria-hidden="true"` (`Icon.js:36`) a los iconos sin hijos ni props de accesibilidad | Imprecisa | Con la evidencia. Queda confirmarlo en el navegador |
+| "Movimiento reducido: Recharts anima los gráficos" | También `ui/skeleton.tsx:7` (`animate-pulse`) y `kpi-card.tsx:53` (`transition-colors`) | Incompleta | Añadidos |
+| "La carga y el error de `App.tsx:51`" | Esa línea es solo el error (`:51-55`). La carga son los `Skeleton` de cada componente | Imprecisa | Referencias corregidas |
+| "`App.tsx:24-27` guarda `metrics` y `monthlyData`" | Están en `:24-25`. `:26-27` son `loading` y `error` | Imprecisa | Corregido |
+| Clasificación de las 70 reglas de Vercel | Faltaban 9 reglas (`bundle-preload`, `bundle-analyzable-paths`, `rendering-usetransition-loading`, `async-defer-await`…) | Incompleta | Clasificadas: 5 posibles y 4 que no aplican |
+| Fila "Arranque": `up --build` en la tabla y `up -d` en el texto | Las imágenes ya estaban construidas, así que se usó `up -d` | Poco clara | Se indican los dos comandos |
+
+**No verificable sin conexión** por el revisor: el número de instalaciones, la versión del CLI y el `diff -r` con los repos de origen. Los comprobó el agente principal durante la instalación.
+
+---
+
+## Skills · Fase 2: Aplicar la skill `accessibility`
+
+**Fecha:** 2026-11-16/17. Plan: [`plans/phase-2-accessibility.md`](plans/phase-2-accessibility.md). El detalle de los cambios está en [`memory-bank/progress.md`](memory-bank/progress.md) (Fase 2).
+
+### Comprobaciones ejecutadas
+
+| Comprobación | Resultado |
+|---|---|
+| Lighthouse Accessibility (Snapshot, Mobile) antes y después | ✅ 100 → 100. Fallan 0 → 0, pasan 20 → 23 (las 3 nuevas validan la tabla) |
+| TE-01 tras los cambios | ✅ pytest 15 · vitest 6 · lint OK · build OK. Sin advertencias nuevas (JS de 585,86 kB) |
+| Árbol de accesibilidad, teclado y foco en el navegador | ✅ Gráficas con nombre, `h2`, tablas, `status` y tooltip anunciado. Foco sólido (4,6:1) |
+| Estado de error (backend parado un momento) | ✅ `role="alert"` con el mensaje. El backend se volvió a arrancar (`/health` → ok) |
+| Contraste (16 pares `.dark`, calculado en el navegador) | ✅ Todos pasan salvo el anillo de foco al 50 % (2,02:1), que se corrigió en A7 |
+
+### Correcciones (afirmación incorrecta → corrección)
+
+- **"Lighthouse en modo Navigation no puede auditar la app (`NO_FCP`)"** → La app pinta en 0,1 s con la pestaña en primer plano; con la pestaña oculta, Chrome retrasa el pintado (9,9 s medidos). Se usó el modo Snapshot, que la skill admite.
+- **"`title` en `<LineChart>` da nombre a la gráfica" (A2)** → Chrome no tomaba el `<title>` del SVG como nombre del `role="application"`: el árbol seguía mostrando `application` sin nombre. Se cambió por `aria-label`, y ahora sí lo muestra.
+- **"`sr-only` en la `<table>` la reduce a 1 px" (A3)** → Las tablas no respetan el `width`/`height` de `sr-only`: la caja medía 221×336 px, aunque no se veía (`clip-path`). Se envolvió en un `div.sr-only`, que mide 1×1 px.
+
+### Revisión independiente del diff
+
+Un **agente nuevo, sin contexto**, revisó el diff contra la skill y contra `.agents/rules/frontend.md`, y volvió a ejecutar build, lint y tests. Confirmó como correctos:
+- `sr-only` y `motion-safe:` en Tailwind 4, con el CSS generado comprobado;
+- el `aria-label` en el SVG (Recharts lo deja pasar);
+- la leyenda discontinua;
+- que el cambio de foco solo afecta al `outline-color` y da 4,68:1;
+- los `h2`, la tabla y el `role="alert"`;
+- y FE-01/02/03/04/06/07/08.
+
+Encontró estos problemas, todos comprobados antes de decidir:
+
+| # | Afirmación o cambio | Realidad | Gravedad | Decisión |
+|---|---|---|---|---|
+| R1 | `role="status"` con "Loading financial data…" anuncia la carga | El texto ya estaba al crear la región, y los lectores de pantalla solo anuncian **cambios**. Después se vaciaba, así que en la práctica no anunciaba nada (patrón de *live regions* de la skill) | Debe corregirse | La región empieza vacía y dice "Financial data loaded." |
+| R2 | El `desc` dice "use las flechas" | Al usarlas no se anunciaba nada: el tooltip de Recharts por defecto tiene `role="status"` (`DefaultTooltipContent.js:133-136`), pero los `CustomTooltip` no | Debe corregirse | `role="status" aria-live="polite"` en los dos tooltips |
+| R3 | `aria-busy` en las secciones | No aparece en la skill (`grep` sin resultados) y no aportaba nada | Detalle | Quitado |
+| R4 | `motion-safe:animate-pulse` | Es válido, pero el parpadeo es de opacidad y no de movimiento | Detalle | Se mantiene, justificado por la sección "Motion (2.3)" de la skill |
+| R5 | Hijos de `<>` sin sangrar | Decisión deliberada por FE-04 | Detalle | Sin cambios |
+| R6 | Iconos de la leyenda | Recharts les pone `aria-label="income legend icon"` (`DefaultLegendContent.js:133`) | Detalle | Limitación aceptada |
+| R7 | Etiqueta y valor de cada KPI | Sin relación programática (1.3.1) | Detalle | `<dl>/<dt>/<dd>` aplicado, con el mismo aspecto |
+
+---
+
+## Skills · Fase 3: Aplicar la skill `vercel-react-best-practices`
+
+**Fecha:** 2026-11-17. Plan: [`plans/phase-3-vercel-react-best-practices.md`](plans/phase-3-vercel-react-best-practices.md). El detalle está en [`memory-bank/progress.md`](memory-bank/progress.md) (Fase 3).
+
+### Comprobaciones ejecutadas
+
+| Comprobación | Resultado |
+|---|---|
+| Composición del bundle (*source maps*) | Recharts y sus dependencias ≈ 58 % del JS; lucide, solo 5 iconos |
+| Build antes → después | 585,86 kB con advertencia → 229 kB iniciales + Recharts en diferido, **sin advertencias** |
+| CLS (backend en pausa, `PerformanceObserver`) | 0,0116 → **0**, con la misma altura en 8 anchos (320-1366 px) |
+| Orden de descarga | El código de las gráficas se descarga en paralelo a la API (~52-64 ms) |
+| Fallo de carga de una gráfica (`throw` temporal, retirado) | ✅ Solo esa gráfica muestra el error; el resto sigue funcionando |
+| TE-01 | ✅ pytest 15 · vitest 6 · lint OK · build OK |
+
+### Correcciones (afirmación incorrecta → corrección)
+
+- **"El CLS es 0" (primera medición)** → La API responde en ~0,1 s y los *skeletons* casi no se llegaban a ver. Con el backend en pausa (`docker compose pause backend`), el CLS real era 0,0116.
+- **"V3 deja el CLS a 0" (medido solo a 1366 px y en 3 iframes)** → La revisión independiente lo dudó. Al medir 320, 360, 640 y 700 px, seguía habiendo saltos de ~20 px: el texto de ayuda de las KPI y la descripción de las gráficas pasan a 2 líneas. Se corrigió reservando esas líneas (F2 y F3).
+- **Referencias de línea en reglas y documentación** → `income-outcome-chart.tsx:113` (FE-06) estaba desfasada desde la Fase 2, y `App.tsx:16/37/46/49` se movieron en esta fase. 14 referencias corregidas en `.agents/rules/`, `engineering-findings.md` y el memory-bank.
+
+### Revisión independiente del diff
+
+Un **agente nuevo, sin contexto**, revisó el diff contra la skill y contra `frontend.md`, y volvió a ejecutar build, lint y tests. Confirmó como correcto:
+- `React.lazy` con exportaciones con nombre (FE-02 se mantiene);
+- un `Suspense` por gráfica;
+- **sin cascada**: el código de las gráficas y la API se piden en paralelo, y Recharts se descarga una sola vez;
+- rutas de `import()` estáticas (`bundle-analyzable-paths`);
+- que `bundle-preload` no aportaría nada;
+- FE-02/03/04 y eslint;
+- la accesibilidad de la Fase 2 intacta;
+- que no faltaba ninguna regla que aplique.
+
+| # | Hallazgo | Comprobación | Gravedad | Decisión |
+|---|---|---|---|---|
+| F1 | Sin *error boundary*, un fallo al cargar el código de una gráfica desmonta toda la app | ✅ No había ninguno (`grep`) | Debe corregirse | `ChartErrorBoundary` por gráfica, comprobado con un fallo provocado |
+| F2 | El *skeleton* del texto de ayuda no encaja por debajo de `xl` | ✅ Medido: salto en 320, 640 y 700 px | Debe corregirse | `min-h-[3.25em]` en el `<dd>` y en el *skeleton* |
+| F3 | La descripción de las gráficas ocupa 2 líneas en el móvil | ✅ Medido: 422 → 442 px en 320 y 360 px | Debe corregirse | `max-sm:min-h-10` en la descripción y en el *skeleton* |
+| F4 | El trozo `chart-skeleton-*.js` tiene un nombre confuso: es código compartido | ✅ | Detalle | Se deja: es el comportamiento del bundler |
+| F5 | El *skeleton* del *fallback* se cambia por el de la gráfica, y el parpadeo se reinicia | ✅ | Detalle | Se deja: misma altura, sin salto |
+| F6 | "Financial data loaded." puede anunciarse antes de que se pinte la gráfica | ✅ En teoría | Detalle | Se deja: el código de las gráficas empieza a descargarse antes que la API |
+
+## Skills · Fase 4: Explorar el ecosistema y aplicar `seo` y `fastapi`
+
+**Fecha:** 2026-11-17. Plan: [`plans/phase-4-explore-ecosystem.md`](plans/phase-4-explore-ecosystem.md). El detalle está en [`memory-bank/progress.md`](memory-bank/progress.md) (Fase 4).
+
+### Comprobaciones ejecutadas
+
+| Comprobación | Resultado |
+|---|---|
+| `npx skills find` en 6 temas | `seo`, `testing`, `typescript`, `tailwind`, `fastapi` y `performance`, con los resultados anotados |
+| Skills instaladas = skills leídas | ✅ `diff` sin diferencias entre los `SKILL.md` leídos antes de instalar y los instalados |
+| Lighthouse SEO (Snapshot, Mobile) | 60 → **100** (informes `lighthouse-seo-antes.json` y `lighthouse-seo-despues.json`) |
+| `openapi.json` antes y después | ✅ Idéntico |
+| Validación de parámetros | ✅ 422 en `/comparison` sin fechas, `limit=99` y `category=foo` |
+| TE-01 | ✅ pytest 15 · vitest 6 · lint OK · build sin advertencias |
+
+### Correcciones (afirmación incorrecta → corrección)
+
+- **"Frontend en TypeScript estricto" (plan)** → Ningún `tsconfig` activa `strict`. Corregido en el plan antes de buscar.
+- **Primer informe `lighthouse-seo-antes.json`** → Solo traía la categoría Accesibilidad. Se repitió marcando SEO.
+- **"Con `noindex` bajará la nota SEO"** → En modo Snapshot no corre `is-crawlable`, así que la nota no baja. Solo fallaría en modo Navigation.
+- **Meta description "…monthly income, outcome, net profit and profit margin for 2024"** → Incorrecta: repetía el "2024" del bug A6 (los datos son de los 12 meses anteriores) y llamaba mensuales a los KPI, que son totales. Detectado por la revisión independiente y corregido.
+
+### Revisión independiente del diff
+
+Un **agente nuevo, sin contexto**, revisó el diff contra las dos skills y las reglas de `.agents/rules/`, y volvió a pasar pytest. Confirmó como correcto:
+- los 31 parámetros reescritos (en 7 endpoints) conservan tipo, valor por defecto y restricciones;
+- las fechas de `/comparison` siguen siendo obligatorias, y no queda ningún `Query(` antiguo ni `...`;
+- `from __future__ import annotations` es compatible con `Annotated`;
+- se cumplen BE-01 (`response_model` en todos) y BE-02;
+- no se ha desplazado ninguna referencia de línea;
+- la combinación `robots.txt` con `Allow: /` + `noindex` es correcta;
+- `skills-lock.json` es coherente.
+
+| # | Hallazgo | Comprobación | Gravedad | Decisión |
+|---|---|---|---|---|
+| R1 | La meta description dice "2024" y llama mensuales a los KPI | ✅ A6 y `kpi-row.tsx` | Debe corregirse | Texto nuevo, aprobado por el usuario |
+| R2 | El ejemplo de BE-01 sigue con `Query(default=...)` | ✅ | Debe corregirse | Ejemplo con `Annotated` y "Evita" ampliado |
+| R3 | El 100 de Lighthouse puede malinterpretarse con `noindex` | ✅ | Documentar | Anotado: modo Snapshot, `is-crawlable` fallaría a propósito |
+| R4 | `robots.txt` no cubre el backend en `:8000` ni lleva `Sitemap:` | ✅ | Detalle | Anotado, fuera de alcance |
+| R5 | El plan no recoge `robots.txt` | ✅ | Detalle | Añadido al plan |
+| R6/R7 | Falta la documentación de la fase y el memory-bank | ✅ | Paso pendiente | `progress.md`, `verification.md`, `current-state.md` y `architecture.md` actualizados |
+
+## Skills · Fase 5: Skill interna `pre-merge-qa`
+
+**Fecha:** 2026-11-17. Plan: [`plans/phase-5-internal-skill.md`](plans/phase-5-internal-skill.md). El detalle está en [`memory-bank/progress.md`](memory-bank/progress.md) (Fase 5).
+
+### Comprobaciones ejecutadas
+
+| Comprobación | Resultado |
+|---|---|
+| `npx skills find` (`pre-merge`, `api contract`, `shadcn`) | Nada específico de este repo; solo `shadcn` (oficial) cubre en parte la UI |
+| Cada comando de la skill, ejecutado antes de guardarla | ✅ Todos funcionan |
+| `fingerprint.py` en 4 casos | ✅ Sin cambios: iguales · campo nuevo: cambian `openapi` y `contract` · llamada extra a `random`: solo `mock` · `HEAD` frente a `main`: iguales |
+| Prueba 1 con un agente nuevo | 0 comandos fallidos · 3 ❌ reales en la rama · 13 problemas de la skill |
+| Prueba 2 con otro agente nuevo | 0 comandos fallidos · 1 ❌ real en la rama · 10 problemas de la skill |
+
+### Correcciones (afirmación incorrecta → corrección)
+
+**Antes de la primera prueba:**
+- **"Sin `-T`, `exec` falla si no hay terminal"** → Probado: en esta versión de Docker funciona igual. Se quitó la afirmación.
+- **`grep -vE "==\|^#\|^$"` dentro de la tabla** → Al copiarlo tal cual, buscaba un `|` literal. Cambiado por `grep -v -e "==" -e "^#" -e "^$"`.
+
+**Tras la prueba 1:**
+
+| # | Problema | Corrección |
+|---|---|---|
+| M1 | Solo había ✅, ❌ o N/A | Nuevo estado ⚠️ (justificado o aceptado por el usuario), que no bloquea |
+| M2 | No decía qué hacer con ❌ en commits ya subidos | No reescribir: dar las dos opciones al usuario |
+| M3 | BE-02, BE-03 y BE-05 sin comando ("a ojo") | `fingerprint.py`, con 3 huellas |
+| M4 | Los tests sin comando | `grep -cE` de aserciones quitadas, que debe dar 0 |
+| M5 | UR-03 a nivel de rama, pero la regla exige "en el mismo commit" | Comprobación commit a commit con `git log --name-only` |
+| M6 | El comando de cuerpos no decía de qué commit era cada línea | Imprime el hash |
+| M7 | GD-02 confundía el README de una skill de terceros | Solo los README de la raíz |
+| M8 | `index.html` y `public/` no tenían fila | Fila con FE-07 |
+| M9 | "Sin cambiar ningún archivo" era imposible (`dist/`, cachés) | "Ningún archivo versionado" |
+| M10 | Aviso de Starlette atribuido a E2 | "Conocido (ver TE-01)" |
+
+Al probar los comandos de M1-M10 aparecieron dos fallos más: el de la longitud del asunto dependía de la longitud del hash (ahora usa un tabulador) y el de los encabezados de GD-02 contaba las líneas vacías (ahora `grep -oE "^#+"`).
+
+**Tras la prueba 2:**
+
+| # | Problema | Corrección |
+|---|---|---|
+| N1 | **La huella "de HEAD" leía el archivo en disco** | `git show HEAD:backend/app/routes.py` |
+| N2 | UR-03 no comprobaba `last_verified` ni aclaraba si un resultado de Lighthouse cuenta | Comando para `last_verified` y aclaración (cuenta para `current-state.md`) |
+| N3 | `git log --stat` daba más de 100 líneas por las skills de terceros | Excluye `.agents/skills` (59 líneas) |
+| N4 | El comando de cuerpos podía confundir una línea con un hash y no mostraba la línea | Marcador `--- %h`; imprime hash, longitud e inicio de la línea |
+| N5 | El paso 1 sin criterio, y N/A o ✅ sin definir | Paso 1: ✅, o ⚠️ con cambios sin commitear. N/A puede llevar evidencia |
+| N6 | ¿Pueden ir `memory-bank/`, `plans/` y `verification.md` en un `feat`/`fix`? | Sí, lo pide UR-03 |
+
+**No cambiado:** la carpeta `.skills/`, que es la que pide el enunciado (los enlaces funcionan desde ahí), y la revisión de FE-01 a FE-10, que es de criterio y remite al "Cómo comprobarlo" de cada regla.
+
+### Hallazgos reales en la rama, aceptados como excepción por el usuario
+
+| Regla | Commit | Problema |
+|---|---|---|
+| GD-01 | `35a50a5` | Asunto de 84 caracteres (máximo 72) |
+| GD-01 | `4cd1088`, `35a50a5`, `8adab72`, `662e7f3` | Cuerpo en una sola línea de 239-308 caracteres |
+| GD-01 | `8adab72`, `662e7f3` | La skill se instaló dentro de su `feat`/`refactor`, no en un `chore` aparte |
+| UR-03 | `8adab72` | El resultado de Lighthouse SEO se anotó en `current-state.md` en el commit siguiente |
+
+Ya estaban subidos, así que no se reescribe la historia. Los commits de esta fase en adelante cumplen GD-01 (cuerpo a 72) y UR-03.
+
+## Skills · Fase 6: Memory bank al día
+
+**Fecha:** 2026-11-17. Plan: [`plans/phase-6-memory-bank.md`](plans/phase-6-memory-bank.md).
+
+### Comprobaciones ejecutadas
+
+| Comprobación | Resultado |
+|---|---|
+| `tech-stack.md` frente a `pip freeze` y `npm ls` | ✅ Python 3.13.18, Node 24.22.3, npm 11.19.1, 31 paquetes fijados y todas las versiones de las tablas |
+| Datos y API | ✅ 360 movimientos (2025-11-01 a 2026-10-28) y 9 endpoints con 200 |
+| Referencias de línea de `current-state.md`, `architecture.md` y `product-overview.md` | ✅ Las 8 apuntan a lo que dicen |
+| QA final con la skill interna [`pre-merge-qa`](.skills/pre-merge-qa/SKILL.md), por un agente nuevo | ✅ **Lista para PR (0 ❌)** en 30 checks. Los ⚠️ son el *error boundary* como clase, las excepciones aceptadas en la Fase 5 y el trabajo de esta fase sin commitear |
+
+### Auditoría independiente del memory bank
+
+Un **agente nuevo, sin contexto**, contrastó cada afirmación del memory bank con el repo, los contenedores, los informes de Lighthouse y `git show --stat` de cada commit citado. No encontró funcionalidades descritas que no existan. Confirmó los 17 hashes del historial, las versiones, los Lighthouse (Accessibility 100 → 100 con 20 → 23 auditorías; SEO 60 → 100), los tamaños del build y las anclas del resumen de `progress.md`.
+
+| # | Afirmación incorrecta | Corrección |
+|---|---|---|
+| 1 | `progress.md`, Fase 4: "31 parámetros con `Query(default=...)`" | 29 con `Query(default=...)` y 2 con `Query(...)` (31 en total) |
+| 2 | `progress.md`, resumen: `8adab72` como commit del lock | El lock de `seo` y `fastapi` entró en `662e7f3` |
+| 3 | `progress.md`, Fase 4: "pendiente V4 de la Fase 3" | V4 no existe en la documentación: "pendiente de la Fase 3, ver «No aplicado»" |
+| 4 | `current-state.md`: "Qué funciona (comprobado el 2026-11-13)" | 2026-11-17 |
+| 5 | `architecture.md` y `progress.md`: `Annotated[T, Query(...)] = valor` | `Query(...)` es la forma con Ellipsis que se quitó: `Annotated[T, Query()] = valor`, y las fechas obligatorias sin valor |
+| 6 | `progress.md`, Fase 1: referencias de línea de `App.tsx` y `kpi-card.tsx` desfasadas | Eran correctas en `8022d3e`, el punto de partida: se indica así |
+| 7 | `product-overview.md`: la cabecera dice "Financial Overview · Executive metrics dashboard" | Es título y subtítulo por separado; unidos son el `<title>` |
+
+**No cambiado (decisión del usuario):** `tech-stack.md` no menciona las skills (`.agents/skills/`, `skills-lock.json`, `.skills/`). No es falso, y están en `progress.md`.
+
+---
+
 # Proyecto de especificaciones (rama `feat/frontend-specs`)
 
 ## Specs · Fase 1: Explorar la API

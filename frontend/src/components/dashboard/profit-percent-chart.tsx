@@ -1,6 +1,8 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { Skeleton } from '@/components/ui/skeleton'
 import { type MonthlyDataPoint } from '@/lib/financial-types'
+import { formatPercent } from '@/lib/financial-utils'
+import { ChartDataTable } from './chart-data-table'
+import { ChartSkeleton } from './chart-skeleton'
 import {
   LineChart,
   Line,
@@ -33,7 +35,7 @@ function CustomTooltip({ active, payload, label }: CustomTooltipProps) {
   if (!active || !payload?.length) return null
   const value = payload[0]?.value ?? 0
   return (
-    <div className="rounded-lg border border-border bg-card px-4 py-3 shadow-lg text-sm">
+    <div role="status" aria-live="polite" className="rounded-lg border border-border bg-card px-4 py-3 shadow-lg text-sm">
       <p className="font-semibold text-foreground mb-1">{label}</p>
       <div className="flex items-center gap-2">
         <span
@@ -49,17 +51,7 @@ function CustomTooltip({ active, payload, label }: CustomTooltipProps) {
 
 export function ProfitPercentChart({ data, loading }: ProfitPercentChartProps) {
   if (loading) {
-    return (
-      <Card className="border-border/60">
-        <CardHeader className="pb-4">
-          <Skeleton className="h-5 w-52" />
-          <Skeleton className="h-3 w-64 mt-1" />
-        </CardHeader>
-        <CardContent>
-          <Skeleton className="h-[280px] w-full rounded-lg" />
-        </CardContent>
-      </Card>
-    )
+    return <ChartSkeleton />
   }
 
   const hasData = data.some((d) => d.profitPercent !== 0)
@@ -67,8 +59,10 @@ export function ProfitPercentChart({ data, loading }: ProfitPercentChartProps) {
   return (
     <Card className="border-border/60">
       <CardHeader className="pb-4">
-        <CardTitle className="text-base font-semibold">Profit Margin %</CardTitle>
-        <CardDescription>Monthly profit as a percentage of total income</CardDescription>
+        <CardTitle className="text-base font-semibold">
+          <h2>Profit Margin %</h2>
+        </CardTitle>
+        <CardDescription className="max-sm:min-h-10">Monthly profit as a percentage of total income</CardDescription>
       </CardHeader>
       <CardContent>
         {!hasData ? (
@@ -76,8 +70,14 @@ export function ProfitPercentChart({ data, loading }: ProfitPercentChartProps) {
             No data available to display
           </div>
         ) : (
+          <>
           <ResponsiveContainer width="100%" height={280}>
-            <LineChart data={data} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
+            <LineChart
+              data={data}
+              margin={{ top: 4, right: 8, left: 0, bottom: 0 }}
+              aria-label="Profit Margin % chart"
+              desc="Monthly profit as a percentage of total income. Use the arrow keys to move between months. The same data is in the table that follows."
+            >
               <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" strokeOpacity={0.6} />
               <XAxis
                 dataKey="month"
@@ -106,6 +106,14 @@ export function ProfitPercentChart({ data, loading }: ProfitPercentChartProps) {
               />
             </LineChart>
           </ResponsiveContainer>
+          <ChartDataTable
+            caption="Profit margin by month"
+            rowHeaderLabel="Month"
+            rowHeader={(row) => row.month}
+            columns={[{ label: 'Profit margin', value: (row) => formatPercent(row.profitPercent) }]}
+            rows={data}
+          />
+          </>
         )}
       </CardContent>
     </Card>
